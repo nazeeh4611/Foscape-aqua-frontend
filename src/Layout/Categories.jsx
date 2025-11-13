@@ -1,139 +1,147 @@
-import React, { useState } from 'react';
-import { Fish, Wrench } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Fish, Package } from 'lucide-react';
+import axios from 'axios';
+import { baseurl } from '../Base/Base';
 
 const CategoryComponent = () => {
-  const [activeCategory, setActiveCategory] = useState('fishes');
+  const [activeCategory, setActiveCategory] = useState('');
+  const [categories, setCategories] = useState([]);
 
-  const categories = [
-    {
-      id: 'fishes',
-      title: 'Fishes',
-      icon: Fish,
-      description: 'Premium aquatic species for your aquarium',
-      color: 'from-blue-500 to-cyan-500',
-      items: ['Koi Fish', 'Goldfish', 'Tropical Fish', 'Marine Fish']
-    },
-    {
-      id: 'equipments',
-      title: 'Equipment',
-      icon: Wrench,
-      description: 'Professional aquarium equipment & accessories',
-      color: 'from-emerald-500 to-teal-500',
-      items: ['Filters', 'Pumps', 'Lighting', 'Heaters']
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${baseurl}user/category`);
+      console.log(response.data);
+      if (response.data.success) {
+        setCategories(response.data.categories);
+        if (response.data.categories.length > 0) {
+          setActiveCategory(response.data.categories[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const getGradientColor = (index) => {
+    const gradients = [
+      'from-blue-500 to-cyan-500',
+      'from-emerald-500 to-teal-500',
+      'from-purple-500 to-pink-500',
+      'from-orange-500 to-red-500',
+      'from-indigo-500 to-blue-500',
+      'from-pink-500 to-rose-500',
+      'from-teal-500 to-cyan-500',
+      'from-amber-500 to-orange-500'
+    ];
+    return gradients[index % gradients.length];
+  };
+
+  const activeData = categories.find(cat => cat._id === activeCategory);
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-slate-800 mb-4">
-          Our Categories
-        </h1>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Discover our premium selection of aquatic life and professional equipment 
-          for creating stunning underwater environments
-        </p>
-      </div>
+    <div className="w-full mx-auto px-4 py-8 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            Our Categories
+          </h1>
+          <p className="text-sm text-slate-600 max-w-xl mx-auto">
+            Discover our premium selection of aquatic life and professional equipment
+          </p>
+        </div>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-12">
-        {categories.map((category) => {
-          const IconComponent = category.icon;
-          return (
-            <div
-              key={category.id}
-              className={`relative group cursor-pointer transform transition-all duration-300 hover:scale-105 ${
-                activeCategory === category.id ? 'scale-105' : ''
-              }`}
-              onClick={() => setActiveCategory(category.id)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r opacity-75 rounded-2xl blur-lg group-hover:opacity-90 transition-opacity duration-300"
-                   style={{background: `linear-gradient(135deg, ${category.color.includes('blue') ? '#3b82f6, #06b6d4' : '#10b981, #14b8a6'})`}}
-              ></div>
-              
-              <div className={`relative bg-white rounded-2xl p-8 shadow-xl border-2 transition-all duration-300 ${
-                activeCategory === category.id 
-                  ? 'border-blue-200 shadow-2xl' 
-                  : 'border-transparent hover:border-blue-100'
-              }`}>
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-6 mx-auto`}>
-                  <IconComponent className="w-8 h-8 text-white" />
-                </div>
-                
-                <h3 className="text-2xl font-bold text-slate-800 text-center mb-3">
-                  {category.title}
-                </h3>
-                
-                <p className="text-slate-600 text-center mb-6">
-                  {category.description}
-                </p>
-                
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {category.items.map((item, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className={`mt-6 w-full h-1 rounded-full bg-gradient-to-r ${category.color} transform origin-left transition-transform duration-300 ${
-                  activeCategory === category.id ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`}></div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <div className="flex items-center justify-center mb-6">
-          {categories.map((category) => {
-            const IconComponent = category.icon;
+        {/* Compact Category Icons */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {categories.map((category, index) => {
+            const gradientColor = getGradientColor(index);
+            const isActive = activeCategory === category._id;
+            
             return (
               <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 mx-2 ${
-                  activeCategory === category.id
-                    ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                key={category._id}
+                onClick={() => setActiveCategory(category._id)}
+                className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-300 hover:scale-105 w-28 ${
+                  isActive 
+                    ? 'bg-white shadow-lg' 
+                    : 'bg-white/60 hover:bg-white shadow hover:shadow-md'
                 }`}
               >
-                <IconComponent className="w-5 h-5" />
-                {category.title}
+                {/* Icon/Image Container */}
+                <div className={`relative w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                  isActive 
+                    ? `bg-gradient-to-br ${gradientColor} shadow-md` 
+                    : 'bg-slate-100 group-hover:bg-slate-200'
+                }`}>
+                  <img 
+                    src={category.image} 
+                    alt={category.name}
+                    className={`w-12 h-12 object-cover rounded-lg transition-all duration-300 ${
+                      isActive ? 'brightness-110' : 'brightness-90 group-hover:brightness-100'
+                    }`}
+                  />
+                </div>
+                
+                {/* Category Name */}
+                <span className={`text-xs font-semibold text-center transition-colors duration-300 ${
+                  isActive ? 'text-slate-800' : 'text-slate-600 group-hover:text-slate-800'
+                }`}>
+                  {category.name}
+                </span>
+
+                {/* Active Indicator */}
+                {isActive && (
+                  <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
+                )}
               </button>
             );
           })}
         </div>
-        
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-800 mb-4">
-            {categories.find(cat => cat.id === activeCategory)?.title}
-          </h2>
-          <p className="text-lg text-slate-600 mb-8">
-            {categories.find(cat => cat.id === activeCategory)?.description}
-          </p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.find(cat => cat.id === activeCategory)?.items.map((item, index) => (
-              <div
-                key={index}
-                className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all duration-300 cursor-pointer"
-              >
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${categories.find(cat => cat.id === activeCategory)?.color} mb-3 mx-auto opacity-80`}></div>
-                <h4 className="font-semibold text-slate-800">{item}</h4>
+
+        {/* Selected Category Display */}
+        {activeData && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {/* Image Section */}
+              <div className="flex-shrink-0">
+                <div className={`w-48 h-48 rounded-2xl bg-gradient-to-br ${getGradientColor(categories.findIndex(c => c._id === activeCategory))} p-1 shadow-xl`}>
+                  <div className="w-full h-full bg-white rounded-xl overflow-hidden">
+                    <img 
+                      src={activeData.image} 
+                      alt={activeData.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
               </div>
-            ))}
+              
+              {/* Info Section */}
+              <div className="flex-grow text-center md:text-left">
+                <h2 className="text-3xl font-bold text-slate-800 mb-3">
+                  {activeData.name}
+                </h2>
+                <p className="text-slate-600 mb-6 leading-relaxed">
+                  {activeData.description}
+                </p>
+                <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                  <Package className="w-4 h-4" />
+                  View All
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <div className="text-center mt-12">
-        <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 cursor-pointer">
-          <Fish className="w-5 h-5" />
-          Explore All Products
+        )}
+        
+        {/* Bottom CTA */}
+        <div className="text-center">
+          <button className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+            <Fish className="w-5 h-5" />
+            Explore All Products
+          </button>
         </div>
       </div>
     </div>

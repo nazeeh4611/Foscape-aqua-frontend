@@ -2,8 +2,8 @@ import axios from "axios";
 import React, { useState } from "react";
 import { baseurl } from "../../Base/Base";
 import { toast } from 'react-toastify';
-import { GoogleLogin, googleLogout } from '@react-oauth/google';
-import ForgotPasswordModal from './ForgotPassModal';
+import { GoogleLogin } from '@react-oauth/google';
+import { X, ArrowRight, Mail, Lock, User, Phone, KeyRound } from 'lucide-react';
 
 const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,12 +11,13 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [username, setUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!show) return null;
 
@@ -28,27 +29,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
     setPhone("");
     setRegPassword("");
     setConfirmPassword("");
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(
-        `${baseurl}User/login`,
-        { email, password },
-        { withCredentials: true }
-      );
-  
-      console.log("Login Success:", res.data);
-  
-      resetForm();
-      if (res.data.user) {
-        onLoginSuccess(res.data.user);
-      }
-    } catch (error) {
-      console.error("Login Error:", error.response?.data?.message || error.message);
-      toast.error(error.response?.data?.message || "Login failed");
-    }
+    setForgotEmail("");
   };
 
   const handleRegister = async (e) => {
@@ -57,26 +38,58 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
       toast.error("Passwords do not match");
       return;
     }
+    if (regPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setIsSubmitting(true);
     try {
-      const res = await axios.post(
-        `${baseurl}User/register`,
-        {
-          username,
-          email: regEmail,
-          phone,
-          password: regPassword,
-        },
-        { withCredentials: true }
-      );
-      
-      console.log("Registration Success:", res.data);
-      
+      const res = await axios.post(`${baseurl}user/register`, {
+        username,
+        email: regEmail,
+        phone,
+        password: regPassword,
+      });
+      toast.success("Account created! Check your email.");
       resetForm();
       onClose();
       onRegisterSuccess(regEmail);
     } catch (error) {
-      console.error("Registration Error:", error.response?.data?.message || error.message);
       toast.error(error.response?.data?.message || "Registration failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await axios.post(`${baseurl}user/login`, { email, password }, {
+        withCredentials: true
+      });
+      
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+      
+      if (res.data.user) {
+        localStorage.setItem("userData", JSON.stringify(res.data.user));
+      }
+      
+      toast.success("Welcome back!");
+      resetForm();
+      
+      // Call onLoginSuccess to update navbar and context
+      if (onLoginSuccess) {
+        await onLoginSuccess();
+      }
+      
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -84,290 +97,324 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
     try {
       const res = await axios.post(
         `${baseurl}User/google-auth`,
-        { 
-          credential: credentialResponse.credential 
-        },
+        { credential: credentialResponse.credential },
         { withCredentials: true }
       );
-
-      console.log("Google Auth Success:", res.data);
       
-      resetForm();
-      if (res.data.user) {
-        onLoginSuccess(res.data.user);
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
       }
+      
+      if (res.data.user) {
+        localStorage.setItem("userData", JSON.stringify(res.data.user));
+      }
+      
+      toast.success("Success!");
+      resetForm();
+      
+      // Call onLoginSuccess to update navbar and context
+      if (onLoginSuccess) {
+        await onLoginSuccess();
+      }
+      
       onClose();
     } catch (error) {
-      console.error("Google Auth Error:", error.response?.data?.message || error.message);
-      toast.error(error.response?.data?.message || "Google authentication failed");
+      toast.error(error.response?.data?.message || "Authentication failed");
     }
   };
 
-  const handleGoogleError = () => {
-    console.error("Google Auth Error");
-    toast.error("Google authentication failed");
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      toast.error("Please enter your email");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await axios.post(`${baseurl}user/forgot-password`, { email: forgotEmail });
+      toast.success("Reset link sent!");
+      setShowForgotPassword(false);
+      setForgotEmail("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send reset link");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleModalClose = () => {
     resetForm();
     setIsLogin(true);
+    setShowForgotPassword(false);
     onClose();
   };
 
-  const handleForgotPasswordClick = () => {
-    setShowForgotPassword(true);
-  };
-
-  const handleForgotPasswordClose = () => {
-    setShowForgotPassword(false);
-  };
-
   return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl border border-gray-100 overflow-hidden">
-          
-          <div className="relative px-6 py-6" style={{ backgroundColor: 'rgb(248, 252, 255)' }}>
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-black mb-1">
-                  {isLogin ? 'Welcome Back' : 'Create Account'}
-                </h2>
-                <p className="text-gray-600 text-xs">
-                  {isLogin ? 'Sign in to your account' : 'Join Waves Global'}
-                </p>
-              </div>
-              <button 
-                onClick={handleModalClose}
-                className="text-gray-400 hover:text-black text-xl w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center transition-all duration-200"
-              >
-                ×
-              </button>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(20, 78, 140, 0.15)', backdropFilter: 'blur(8px)' }}>
+      <div className="relative w-full max-w-md">
+        
+        {!showForgotPassword ? (
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'linear-gradient(135deg, #144E8C 0%, #78C7A2 100%)' }}>
+            
+            <button 
+              onClick={handleModalClose}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all hover:rotate-90"
+              style={{ background: 'rgba(255, 255, 255, 0.2)' }}
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
 
-            <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-100">
-              <button
-                onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                  isLogin 
-                    ? 'bg-orange-500 text-white shadow-sm' 
-                    : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                }`}
-                style={isLogin ? {background: `linear-gradient(to right, rgb(231, 121, 0), rgb(250, 153, 56))`,    } : {}}  >
-                Sign In
-              </button>
-              <button
-                onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                  !isLogin 
-                    ? 'bg-orange-500 text-white shadow-sm' 
-                    : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                }`}
-                style={!isLogin ? {background: `linear-gradient(to right, rgb(231, 121, 0), rgb(250, 153, 56))`,    }  : {}}
-              >
-                Sign Up
-              </button>
-            </div>
-          </div>
-          
-          <div className="px-6 py-4">
-            {isLogin ? (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Email Address</label>
+            <div className="p-8">
+              <div className="flex gap-1 mb-8 p-1.5 rounded-2xl" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>
+                <button
+                  onClick={() => setIsLogin(true)}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
+                  style={isLogin ? 
+                    { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
+                    { color: 'rgba(255, 255, 255, 0.7)', background: 'transparent' }
+                  }
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setIsLogin(false)}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
+                  style={!isLogin ? 
+                    { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
+                    { color: 'rgba(255, 255, 255, 0.7)', background: 'transparent' }
+                  }
+                >
+                  Register
+                </button>
+              </div>
+
+              {isLogin ? (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                      placeholder="Enter your email"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff', focusRingColor: 'rgba(255, 255, 255, 0.3)' }}
+                      placeholder="Email"
+                      placeholderClassName="text-white/50"
                       required
                     />
+                    <style>{`input::placeholder { color: rgba(255, 255, 255, 0.6); }`}</style>
                   </div>
                   
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                      placeholder="Enter your password"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <button 
-                    type="button" 
-                    onClick={handleForgotPasswordClick}
-                    className="text-xs font-medium transition-colors duration-200 hover:underline"
-                    style={{ color: 'rgb(230, 116, 19)' }}
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={handleLogin}
-                  className="w-full py-3 text-white rounded-full font-medium transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm"
-                  style={{background: `linear-gradient(to right, rgb(231, 121, 0), rgb(250, 153, 56))`,    } }
-                >
-                  Sign In to Your Account
-                </button>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-white text-gray-500 font-medium">Or continue with</span>
-                  </div>
-                </div>
-                
-                <div className="w-full">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="outline"
-                    size="large"
-                    width="100%"
-                    text="signin_with"
-                    shape="rectangular"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Username</label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                      placeholder="Username"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Phone</label>
-                    <input
-                      type="text"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                      placeholder="Phone"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                    style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Password</label>
-                    <input
-                      type="password"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                       placeholder="Password"
                       required
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Confirm</label>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-xs font-medium hover:underline"
+                    style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                  >
+                    Forgot password?
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
+                  >
+                    {isSubmitting ? 'Please wait...' : 'Continue'}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
+                    <span className="text-xs font-medium text-white opacity-70">or</span>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl p-1">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => toast.error("Google auth failed")}
+                      theme="light"
+                      size="large"
+                      width="100%"
+                      text="signin_with"
+                    />
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <User className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                        placeholder="Name"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                        placeholder="Phone"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
                     <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-sm"
-                      style={{ backgroundColor: 'rgb(247, 247, 247)' }}
-                      placeholder="Confirm"
+                      type="email"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                      placeholder="Email"
                       required
                     />
                   </div>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={handleRegister}
-                  className="w-full py-3 text-white rounded-full font-medium transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm"
-                  style={{background: `linear-gradient(to right, rgb(231, 121, 0), rgb(250, 153, 56))`,    } }
-                >
-                  Create Your Account
-                </button>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+                      <input
+                        type="password"
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                        placeholder="Password"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                        placeholder="Confirm"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-white text-gray-500 font-medium">Or continue with</span>
-                  </div>
-                </div>
-                
-                <div className="w-full">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="outline"
-                    size="large"
-                    width="100%"
-                    text="signup_with"
-                    shape="rectangular"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
+                  >
+                    {isSubmitting ? 'Creating...' : 'Create Account'}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
 
-          <div className="px-6 pb-4">
-            <div className="text-center">
-              <div className="text-xs text-gray-500 leading-relaxed">
-                By continuing, you agree to our{' '}
-                <button className="font-medium hover:underline" style={{ color: 'rgb(230, 116, 19)' }}>
-                  Terms of Service
-                </button>
-                {' '}and{' '}
-                <button className="font-medium hover:underline" style={{ color: 'rgb(230, 116, 19)' }}>
-                  Privacy Policy
-                </button>
-              </div>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
+                    <span className="text-xs font-medium text-white opacity-70">or</span>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl p-1">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => toast.error("Google auth failed")}
+                      theme="light"
+                      size="large"
+                      width="100%"
+                      text="signup_with"
+                    />
+                  </div>
+                </form>
+              )}
+
+              <p className="text-center text-xs mt-6 text-white opacity-60">
+                Protected by reCAPTCHA
+              </p>
             </div>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl p-8" style={{ background: 'linear-gradient(135deg, #144E8C 0%, #78C7A2 100%)' }}>
+            <button 
+              onClick={() => setShowForgotPassword(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all hover:rotate-90"
+              style={{ background: 'rgba(255, 255, 255, 0.2)' }}
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
 
-      <ForgotPasswordModal
-        show={showForgotPassword}
-        onClose={handleForgotPasswordClose}
-      />
-    </>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>
+                <KeyRound className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Reset Password</h3>
+              <p className="text-sm mt-2 text-white opacity-80">
+                Enter your email for reset link
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                  style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
+              >
+                {isSubmitting ? 'Sending...' : 'Send Link'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full py-2.5 text-sm font-medium transition-all rounded-xl text-white opacity-80 hover:opacity-100"
+                style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+              >
+                Back to Login
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

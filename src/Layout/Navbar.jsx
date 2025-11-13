@@ -8,6 +8,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ClientId } from "../Base/Base.js";
 import { useAuth } from "../Context.js/Auth.jsx";
+import { Menu, X } from "lucide-react";
 
 const Navbar = () => {
   const { user, isLogged, checkAuthStatus, logout } = useAuth();
@@ -30,10 +31,14 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${baseurl}User/logout`, {}, { withCredentials: true });
-      logout(); 
+      await axios.post(`${baseurl}user/logout`, {}, { withCredentials: true });
+      logout();
       setShowProfileDropdown(false);
-    } catch {}
+      setIsMenuOpen(false);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const handleLogoClick = () => {
@@ -59,7 +64,7 @@ const Navbar = () => {
                 <img
                   src={logo}
                   alt="Logo"
-                  className="h-28 md:h-36 lg:h-32 w-auto object-contain hover:scale-105 transition-transform duration-200"
+                  className="h-20 md:h-32 lg:h-24 w-auto object-contain hover:scale-105 transition-transform duration-200"
                 />
               </div>
             </div>
@@ -71,9 +76,15 @@ const Navbar = () => {
                 </span>
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
-              <Link to="/property" className="relative group py-2">
+              <Link to="/service" className="relative group py-2">
                 <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  Properties
+                  Service
+                </span>
+                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
+              </Link>
+              <Link to="/categories" className="relative group py-2">
+                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
+                  Shop
                 </span>
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
@@ -114,7 +125,7 @@ const Navbar = () => {
 
                     {showProfileDropdown && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
-                        <div className="px-4 py-2 border-b border-teal-100">
+                        <div className="px-4 py-3 border-b border-teal-100">
                           <p className="text-sm font-semibold text-gray-700">
                             {user?.name}
                           </p>
@@ -131,7 +142,7 @@ const Navbar = () => {
                         </Link>
                         <button
                           onClick={handleLogout}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
+                          className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
                         >
                           Logout
                         </button>
@@ -154,7 +165,7 @@ const Navbar = () => {
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
-                      <div className="px-4 py-2 border-b border-teal-100">
+                      <div className="px-4 py-3 border-b border-teal-100">
                         <p className="text-sm font-semibold text-gray-700">
                           {user?.name}
                         </p>
@@ -171,7 +182,7 @@ const Navbar = () => {
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
+                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
                       >
                         Logout
                       </button>
@@ -185,21 +196,11 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
               >
-                <span
-                  className={`block w-6 h-0.5 bg-teal-600 transition-all duration-300 ${
-                    isMenuOpen ? 'rotate-45 translate-y-2' : ''
-                  }`}
-                />
-                <span
-                  className={`block w-6 h-0.5 bg-teal-600 transition-all duration-300 ${
-                    isMenuOpen ? 'opacity-0' : ''
-                  }`}
-                />
-                <span
-                  className={`block w-6 h-0.5 bg-teal-600 transition-all duration-300 ${
-                    isMenuOpen ? '-rotate-45 -translate-y-2' : ''
-                  }`}
-                />
+                {isMenuOpen ? (
+                  <X className="w-6 h-6 text-teal-600" />
+                ) : (
+                  <Menu className="w-6 h-6 text-teal-600" />
+                )}
               </button>
             </div>
           </div>
@@ -209,7 +210,7 @@ const Navbar = () => {
               isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             } overflow-hidden`}
           >
-            <nav className="px-4 py-4 space-y-4">
+            <nav className="px-4 py-4 space-y-4 border-t border-teal-100">
               <Link
                 to="/"
                 className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
@@ -218,11 +219,18 @@ const Navbar = () => {
                 Home
               </Link>
               <Link
-                to="/property"
+                to="/service"
                 className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
                 onClick={handleMenuItemClick}
               >
-                Properties
+                Service
+              </Link>
+              <Link
+                to="/shop"
+                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
+                onClick={handleMenuItemClick}
+              >
+                Shop
               </Link>
               <Link
                 to="/about"
@@ -252,7 +260,7 @@ const Navbar = () => {
                   </button>
                 ) : (
                   <div className="space-y-3">
-                    <div className="px-4 py-3 bg-white rounded-lg border border-teal-100">
+                    <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-100">
                       <p className="text-sm font-semibold text-gray-700">
                         {user?.name}
                       </p>
@@ -272,7 +280,7 @@ const Navbar = () => {
                         handleLogout();
                         handleMenuItemClick();
                       }}
-                      className="block w-full text-left py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
+                      className="block w-full text-left py-2 text-lg font-medium text-gray-700 hover:text-red-600 transition-colors duration-300"
                     >
                       Logout
                     </button>

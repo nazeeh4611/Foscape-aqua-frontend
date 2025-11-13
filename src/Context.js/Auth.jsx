@@ -1,5 +1,4 @@
-import React from "react";
-import{ createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { baseurl } from "../Base/Base";
 
@@ -10,16 +9,20 @@ export const AuthProvider = ({ children }) => {
   const [isLogged, setIsLogged] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
+  axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  }, (error) => {
+    return Promise.reject(error);
+  });
   const checkAuthStatus = async () => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("userData") || "null");
-      if (storedUser && storedUser._id) {
-        setUser(storedUser);
-        setIsLogged(true);
-        return storedUser;
-      }
-
-      const response = await axios.get(`${baseurl}User/getuser`, {
+      setIsCheckingAuth(true);
+      
+      const response = await axios.get(`${baseurl}user/getuser`, {
         withCredentials: true,
       });
 
@@ -34,7 +37,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("userData");
         return null;
       }
-    } catch {
+    } catch (error) {
       setUser(null);
       setIsLogged(false);
       localStorage.removeItem("userData");
@@ -52,6 +55,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsLogged(false);
     localStorage.removeItem("userData");
+    localStorage.removeItem("token");
   };
 
   return (

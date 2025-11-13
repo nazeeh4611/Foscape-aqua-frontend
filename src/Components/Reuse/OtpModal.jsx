@@ -1,180 +1,155 @@
+import axios from "axios";
 import React, { useState, useEffect } from "react";
+import { baseurl } from "../../Base/Base";
+import { toast } from "react-toastify";
+import { X, ArrowRight, Lock } from "lucide-react";
 
 const OtpModal = ({ show, onClose, email }) => {
   const [otp, setOtp] = useState("");
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(300);
   const [canResend, setCanResend] = useState(false);
 
   useEffect(() => {
-    if (show) {
-      setTimeLeft(60);
-      setCanResend(false);
-    }
+    if (!show) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [show]);
 
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
-    }
-  }, [timeLeft]);
-
   if (!show) return null;
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await axios.post(
+        `${baseurl}User/verify-otp`,
+        { email, otp },
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        toast.success("Email verified successfully!");
+        localStorage.setItem("token", res.data.token);
+        setOtp("");
+        onClose();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "OTP verification failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsSubmitting(true);
+    try {
+      await axios.post(
+        `${baseurl}User/resend-otp`,
+        { email },
+        { withCredentials: true }
+      );
+      toast.success("OTP resent successfully");
+      setTimeLeft(300);
+      setCanResend(false);
+      setOtp("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to resend OTP");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleVerify = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/user/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          otp
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || "OTP verification failed");
-      }
-
-      window.location.href = "/";
-    } catch (error) {
-      alert(error.message || "OTP verification failed");
-    }
-  };
-
-  const handleResend = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/user/resend-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to resend OTP");
-      }
-      
-      setTimeLeft(60);
-      setCanResend(false);
-    } catch (error) {
-      alert("Failed to resend OTP");
-      console.error(error);
-    }
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl border border-gray-100">
-        
-        {/* Header */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(20, 78, 140, 0.15)", backdropFilter: "blur(8px)" }}
+    >
+      <div className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl p-8" style={{ background: "linear-gradient(135deg, #144E8C 0%, #78C7A2 100%)" }}>
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all hover:rotate-90"
+          style={{ background: "rgba(255, 255, 255, 0.2)" }}
+        >
+          <X className="w-4 h-4 text-white" />
+        </button>
+
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: 'rgb(247, 247, 247)' }}>
-            <svg className="w-8 h-8" style={{ color: 'rgb(230, 116, 19)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4" style={{ background: "rgba(255, 255, 255, 0.15)" }}>
+            <Lock className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-black mb-2">
-            Verify Your Email
-          </h2>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            We've sent a 6-digit verification code to<br/>
-            <span className="font-semibold" style={{ color: 'rgb(230, 116, 19)' }}>{email}</span>
+          <h3 className="text-xl font-bold text-white">Verify Email</h3>
+          <p className="text-sm mt-2 text-white opacity-80">
+            We sent a code to {email}
           </p>
-          
-          <button 
-            onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-black text-2xl w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-all duration-200"
-          >
-            ×
-          </button>
         </div>
-        
-        <div className="space-y-6">
-          {/* OTP Input */}
-          <div>
-            <label className="block text-sm font-semibold text-black mb-4 text-center">Enter Verification Code</label>
+
+        <form onSubmit={handleVerifyOtp} className="space-y-6">
+          <div className="relative">
             <input
               type="text"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
-              className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-black placeholder-gray-400 text-center text-xl tracking-widest font-bold"
-              style={{ backgroundColor: 'rgb(247, 247, 247)' }}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              maxLength="6"
+              className="w-full px-4 py-3 rounded-xl text-center text-2xl font-bold border-0 focus:outline-none focus:ring-2 tracking-widest"
+              style={{ background: "rgba(255, 255, 255, 0.15)", color: "#fff" }}
               placeholder="000000"
-              maxLength={6}
+              required
             />
           </div>
-          
-          {/* Timer */}
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-gray-200" style={{ backgroundColor: 'rgb(248, 252, 255)' }}>
-              <svg className="w-4 h-4" style={{ color: 'rgb(230, 116, 19)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-gray-600 text-sm font-medium">
-                Time remaining: <span className="font-bold" style={{ color: 'rgb(230, 116, 19)' }}>{formatTime(timeLeft)}</span>
-              </span>
-            </div>
-          </div>
-          
-          {/* Verify Button */}
-          <button
-            onClick={handleVerify}
-            disabled={otp.length !== 6}
-            className="w-full py-4 text-white rounded-full font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-400 text-lg tracking-wide"
-            style={{ 
-              backgroundColor: otp.length === 6 ? 'rgb(230, 116, 19)' : 'rgb(156, 163, 175)' 
-            }}
-          >
-            {otp.length === 6 ? 'Verify Code' : `Enter ${6 - otp.length} more digits`}
-          </button>
-          
-          {/* Resend Button */}
-          <div className="text-center">
-            <p className="text-gray-500 text-sm mb-3">Didn't receive the code?</p>
-            <button
-              onClick={handleResend}
-              disabled={!canResend}
-              className="font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:underline text-base"
-              style={{ 
-                color: canResend ? 'rgb(230, 116, 19)' : 'rgb(107, 114, 128)' 
-              }}
-            >
-              {canResend ? 'Resend Code' : `Resend in ${formatTime(timeLeft)}`}
-            </button>
-          </div>
-        </div>
 
-        {/* Help Text */}
-        <div className="mt-8 p-4 rounded-xl border border-gray-200" style={{ backgroundColor: 'rgb(248, 252, 255)' }}>
-          <div className="flex items-start space-x-3">
-            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p className="text-black text-sm font-medium mb-1">Having trouble?</p>
-              <p className="text-gray-600 text-xs leading-relaxed">
-                Check your spam folder or ensure your email address is correct. The code expires in 10 minutes.
-              </p>
-            </div>
+          <div className="text-center">
+            <p className="text-sm text-white opacity-80">
+              {canResend ? (
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={isSubmitting}
+                  className="text-white font-semibold hover:underline disabled:opacity-50"
+                >
+                  Resend OTP
+                </button>
+              ) : (
+                <>Resend in {formatTime(timeLeft)}</>
+              )}
+            </p>
           </div>
-        </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || otp.length !== 6}
+            className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ background: "rgba(255, 255, 255, 0.25)", backdropFilter: "blur(10px)" }}
+          >
+            {isSubmitting ? "Verifying..." : "Verify OTP"}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        <p className="text-center text-xs mt-6 text-white opacity-60">
+          Didn't receive the code? Check your spam folder
+        </p>
       </div>
     </div>
   );

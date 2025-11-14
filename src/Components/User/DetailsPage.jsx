@@ -25,6 +25,9 @@ import axios from 'axios';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
 import { baseurl } from '../../Base/Base';
+import { useAuth } from '../../Context.js/Auth';
+import { useCartWishlist } from '../../Context.js/Cartwishlist';
+import { useToast } from '../../Context.js/ToastContext';
 
 const ProductDetailsPage = () => {
   const [product, setProduct] = useState(null);
@@ -33,9 +36,12 @@ const ProductDetailsPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [addingToWishlist, setAddingToWishlist] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const { addToCart, addToWishlist, wishlist } = useCartWishlist();
+  const showToast = useToast();
   useEffect(() => {
     fetchProductDetails();
     fetchRelatedProducts();
@@ -71,6 +77,65 @@ const ProductDetailsPage = () => {
     if (newQuantity >= 1 && newQuantity <= product.stock) {
       setQuantity(newQuantity);
     }
+  };
+
+  const handleCategoryClick = () => {
+    if (product.category && product.category._id) {
+      navigate(`/${product.category._id}/sub-category?page=1`);
+    }
+  };
+
+  const handleSubCategoryClick = () => {
+    if (product.subCategory && product.subCategory._id) {
+      navigate(`/products/subcategory/${product.subCategory._id}?page=1`);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    setAddingToCart(true);
+    try {
+      const result = await addToCart(product._id, quantity);
+      
+      // Check if result exists and has success property
+      if (result && result.success) {
+        showToast.success('Product added to cart successfully!');
+      } else {
+        // If result exists but success is false, or if result is undefined
+        const errorMessage = result?.message || 'Failed to add product to cart';
+        showToast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showToast.error('Failed to add product to cart. Please try again.');
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+  
+  const handleAddToWishlist = async () => {
+    setAddingToWishlist(true);
+    try {
+      const result = await addToWishlist(product._id);
+      
+      // Check if result exists and has success property
+      if (result && result.success) {
+        showToast.success('Product added to wishlist successfully!');
+      } else {
+        // If result exists but success is false, or if result is undefined
+        const errorMessage = result?.message || 'Failed to add product to wishlist';
+        showToast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+      showToast.error('Failed to add product to wishlist. Please try again.');
+    } finally {
+      setAddingToWishlist(false);
+    }
+  };
+
+  const isInWishlist = () => {
+    if (!wishlist || !wishlist.products) return false;
+    return wishlist.products.some(p => p._id === product._id);
   };
 
   if (loading) {
@@ -131,13 +196,23 @@ const ProductDetailsPage = () => {
               {product.category && (
                 <>
                   <ChevronRight className="w-4 h-4" />
-                  <span className="hover:text-white cursor-pointer">{product.category.name}</span>
+                  <span 
+                    onClick={handleCategoryClick}
+                    className="hover:text-white cursor-pointer"
+                  >
+                    {product.category.name}
+                  </span>
                 </>
               )}
               {product.subCategory && (
                 <>
                   <ChevronRight className="w-4 h-4" />
-                  <span className="text-white font-semibold">{product.subCategory.name}</span>
+                  <span 
+                    onClick={handleSubCategoryClick}
+                    className="text-white font-semibold hover:text-[#CFEAE3] cursor-pointer"
+                  >
+                    {product.subCategory.name}
+                  </span>
                 </>
               )}
             </div>
@@ -171,7 +246,7 @@ const ProductDetailsPage = () => {
                     </div>
                   )}
                   {product.featured && (
-                    <div className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white font-semibold rounded-full shadow-lg">
+                    <div className="absolute bottom-4 right-4 px-4 py-2 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white font-semibold rounded-full shadow-lg">
                       Featured
                     </div>
                   )}
@@ -238,14 +313,23 @@ const ProductDetailsPage = () => {
 
                 <div className="flex gap-3">
                   <button
-                    disabled={product.stock === 0}
+                    onClick={handleAddToCart}
+                    disabled={product.stock === 0 || addingToCart}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart className="w-5 h-5" />
-                    Add to Cart
+                    {addingToCart ? 'Adding...' : 'Add to Cart'}
                   </button>
-                  <button className="px-6 py-4 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                    <Heart className="w-5 h-5 text-slate-700" />
+                  <button 
+                    onClick={handleAddToWishlist}
+                    disabled={addingToWishlist || isInWishlist()}
+                    className={`px-6 py-4 rounded-xl transition-all ${
+                      isInWishlist() 
+                        ? 'bg-red-100 text-red-600' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Heart className={`w-5 h-5 ${isInWishlist() ? 'fill-current' : ''}`} />
                   </button>
                 </div>
 

@@ -4,6 +4,7 @@ import { baseurl } from "../../Base/Base";
 import { toast } from 'react-toastify';
 import { GoogleLogin } from '@react-oauth/google';
 import { X, ArrowRight, Mail, Lock, User, Phone, KeyRound } from 'lucide-react';
+import { useToast } from "../../Context.js/ToastContext";
 
 const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,6 +19,8 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const  showToast = useToast();
 
   if (!show) return null;
 
@@ -35,11 +38,11 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (regPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      showToast.error("Passwords do not match");
       return;
     }
     if (regPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      showToast.error("Password must be at least 6 characters");
       return;
     }
     setIsSubmitting(true);
@@ -50,12 +53,12 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
         phone,
         password: regPassword,
       });
-      toast.success("Account created! Check your email.");
+      showToast.success("Account created! Check your email.");
       resetForm();
       onClose();
       onRegisterSuccess(regEmail);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed");
+      showToast.error(error.response?.data?.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +80,8 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
       }
       
-      toast.success("Welcome back!");
+      // Show success toast
+      showToast.success("Welcome back! Login successful.");
       resetForm();
       
       // Call onLoginSuccess to update navbar and context
@@ -87,7 +91,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
       
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
+      showToast.error(error.response?.data?.message || "Login failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -109,7 +113,8 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
       }
       
-      toast.success("Success!");
+      // Show success toast for Google login
+      showToast.success("Login successful!");
       resetForm();
       
       // Call onLoginSuccess to update navbar and context
@@ -119,24 +124,24 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
       
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Authentication failed");
+      showToast.error(error.response?.data?.message || "Authentication failed");
     }
   };
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!forgotEmail) {
-      toast.error("Please enter your email");
+      showToast.error("Please enter your email");
       return;
     }
     setIsSubmitting(true);
     try {
       await axios.post(`${baseurl}user/forgot-password`, { email: forgotEmail });
-      toast.success("Reset link sent!");
+      showToast.success("Reset link sent!");
       setShowForgotPassword(false);
       setForgotEmail("");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send reset link");
+      showToast.error(error.response?.data?.message || "Failed to send reset link");
     } finally {
       setIsSubmitting(false);
     }
@@ -246,7 +251,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   <div className="bg-white rounded-xl p-1">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => toast.error("Google auth failed")}
+                      onError={() => showToast.error("Google auth failed")}
                       theme="light"
                       size="large"
                       width="100%"
@@ -343,7 +348,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   <div className="bg-white rounded-xl p-1">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => toast.error("Google auth failed")}
+                      onError={() => showToast.error("Google auth failed")}
                       theme="light"
                       size="large"
                       width="100%"

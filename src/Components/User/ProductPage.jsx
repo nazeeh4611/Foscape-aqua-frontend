@@ -13,8 +13,10 @@ import {
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { baseurl } from '../../Base/Base';
+import { useCartWishlist } from '../../Context.js/Cartwishlist';
+import { useAuth } from '../../Context.js/Auth';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -29,12 +31,22 @@ const ProductsPage = () => {
   const [categoryName, setCategoryName] = useState('');
   const { subCategoryId, categoryId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const productsPerPage = 12;
+  const { isLogged } = useAuth();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useCartWishlist();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      setCurrentPage(parseInt(pageParam, 10));
+    }
+  }, [location.search]);
 
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${baseurl}user/categories-with-subcategories`);
-      console.log(response, "is herr");
   
       if (response.data.success) {
         const allCategories = response.data.categories;
@@ -112,8 +124,12 @@ const ProductsPage = () => {
   }, []);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const pageParam = searchParams.get('page');
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+
     if (subCategoryId) {
-      fetchProducts(1, subCategoryId, searchQuery);
+      fetchProducts(page, subCategoryId, searchQuery);
       if (!subCategoryName && categories.length > 0) {
         const categoryWithSub = categories.find(cat =>
           cat.subcategories?.some(sub => sub._id === subCategoryId)
@@ -129,7 +145,7 @@ const ProductsPage = () => {
         }
       }
     } else if (categoryId) {
-      fetchProducts(1, '', searchQuery);
+      fetchProducts(page, '', searchQuery);
       if (!categoryName && categories.length > 0) {
         const category = categories.find(cat => cat._id === categoryId);
         if (category) {
@@ -139,58 +155,78 @@ const ProductsPage = () => {
     } else {
       setSubCategoryName('');
       setCategoryName('');
-      fetchProducts(1, '', searchQuery);
+      fetchProducts(page, '', searchQuery);
     }
-  }, [subCategoryId, categoryId, categories]);
+  }, [subCategoryId, categoryId, categories, location.search]);
   
   useEffect(() => {
+    if (searchQuery === '') {
+      return;
+    }
+
     const delayDebounceFn = setTimeout(() => {
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.set('page', '1');
+      navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
       fetchProducts(1, subCategoryId || '', searchQuery);
     }, 500);
   
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  const toggleCategory = (categoryId) => {
-    setExpandedCategories((prev) => {
-      const isOpen = prev[categoryId];
-      return { [categoryId]: !isOpen }; 
-    });
+  const handleCategoryClick = (category) => {
+    const isCurrentlyExpanded = expandedCategories[category._id];
+    setExpandedCategories({ [category._id]: !isCurrentlyExpanded });
   };
-const handleCategoryClick = (category) => {
-  const isCurrentlyExpanded = expandedCategories[category._id];
-  setExpandedCategories({ [category._id]: !isCurrentlyExpanded });
-};
 
   const handleSubCategoryClick = (subCatId, subCatName, catName, catId) => {
     setSubCategoryName(subCatName);
     setCategoryName(catName);
-    setCurrentPage(1);
     setExpandedCategories({ [catId]: true });
-    navigate(`/products/subcategory/${subCatId}`);
+    setSearchQuery('');
+    navigate(`/products/subcategory/${subCatId}?page=1`);
   };
+
   const handleBreadcrumbCategoryClick = () => {
     if (categoryName && categories.length > 0) {
       const category = categories.find(cat => cat.name === categoryName);
       if (category) {
         setSubCategoryName('');
-        setCurrentPage(1);
-        navigate(`/${category._id}/sub-category`);
+        setSearchQuery('');
+        navigate(`/${category._id}/sub-category?page=1`);
       }
     }
   };
 
-  const handleAllProductsClick = () => {
-    setSubCategoryName('');
-    setCategoryName('');
-    setCurrentPage(1);
-    navigate('/products');
+  const handlePageChange = (page) => {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('page', page.toString());
+    navigate(`${location.pathname}?${searchParams.toString()}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    fetchProducts(page, subCategoryId || '', searchQuery);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleProductClick = (productId, e) => {
+    if (e.ctrlKey || e.metaKey || e.button === 1) {
+      return;
+    }
+    e.preventDefault();
+    navigate(`/product/${productId}`);
+  };
+
+  const handleWishlistToggle = async (productId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isLogged) {
+      navigate('/');
+      return;
+    }
+
+    if (isInWishlist(productId)) {
+      await removeFromWishlist(productId);
+    } else {
+      await addToWishlist(productId);
+    }
   };
 
   const getGradientColor = (index) => {
@@ -264,43 +300,43 @@ const handleCategoryClick = (category) => {
             </div>
 
             <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
-  <span
-    onClick={() => navigate('/')}
-    className="hover:text-white cursor-pointer"
-  >
-    Home
-  </span>
-  <ChevronRight className="w-4 h-4" />
-  <span
-    onClick={() => navigate('/categories')}
-    className="hover:text-white cursor-pointer"
-  >
-    Categories
-  </span>
-  {categoryName && (
-    <>
-      <ChevronRight className="w-4 h-4" />
-      <span 
-        onClick={handleBreadcrumbCategoryClick}
-        className="text-white hover:text-[#CFEAE3] cursor-pointer"
-      >
-        {categoryName}
-      </span>
-    </>
-  )}
-  {subCategoryName && (
-    <>
-      <ChevronRight className="w-4 h-4" />
-      <span className="font-semibold text-white">{subCategoryName}</span>
-    </>
-  )}
-  {!subCategoryName && !categoryName && (
-    <>
-      <ChevronRight className="w-4 h-4" />
-      <span className="font-semibold text-white">All Products</span>
-    </>
-  )}
-</div>
+              <span
+                onClick={() => navigate('/')}
+                className="hover:text-white cursor-pointer"
+              >
+                Home
+              </span>
+              <ChevronRight className="w-4 h-4" />
+              <span
+                onClick={() => navigate('/categories')}
+                className="hover:text-white cursor-pointer"
+              >
+                Categories
+              </span>
+              {categoryName && (
+                <>
+                  <ChevronRight className="w-4 h-4" />
+                  <span 
+                    onClick={handleBreadcrumbCategoryClick}
+                    className="text-white hover:text-[#CFEAE3] cursor-pointer"
+                  >
+                    {categoryName}
+                  </span>
+                </>
+              )}
+              {subCategoryName && (
+                <>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="font-semibold text-white">{subCategoryName}</span>
+                </>
+              )}
+              {!subCategoryName && !categoryName && (
+                <>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="font-semibold text-white">All Products</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -331,22 +367,22 @@ const handleCategoryClick = (category) => {
                       </button>
 
                       {expandedCategories[category._id] && (
-                    <div className="ml-4 space-y-1 pb-2">
-                        {category.subcategories?.map((subCat) => (
-                        <div
-                            key={subCat._id}
-                            onClick={() => handleSubCategoryClick(subCat._id, subCat.name, category.name, category._id)}
-                            className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm ${
-                            subCategoryId === subCat._id
-                                ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-md font-medium'
-                                : 'hover:bg-slate-50 text-slate-600'
-                            }`}
-                        >
-                            {subCat.name}
+                        <div className="ml-4 space-y-1 pb-2">
+                          {category.subcategories?.map((subCat) => (
+                            <div
+                              key={subCat._id}
+                              onClick={() => handleSubCategoryClick(subCat._id, subCat.name, category.name, category._id)}
+                              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm ${
+                                subCategoryId === subCat._id
+                                  ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-md font-medium'
+                                  : 'hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              {subCat.name}
+                            </div>
+                          ))}
                         </div>
-                        ))}
-                    </div>
-                    )}
+                      )}
                     </div>
                   ))}
                 </div>
@@ -401,6 +437,7 @@ const handleCategoryClick = (category) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                     {products.map((product, index) => {
                       const gradient = getGradientColor(index);
+                      const inWishlist = isInWishlist(product._id);
                       return (
                         <div
                           key={product._id}
@@ -470,15 +507,29 @@ const handleCategoryClick = (category) => {
                             </div>
 
                             <div className="flex gap-2">
-                              <button
-                                onClick={() => navigate(`/product/${product._id}`)}
+                              <a
+                                href={`/product/${product._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => handleProductClick(product._id, e)}
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
                               >
                                 <Eye className="w-4 h-4" />
                                 <span className="text-sm">View Details</span>
-                              </button>
-                              <button className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-300">
-                                <Heart className="w-4 h-4 text-slate-600" />
+                              </a>
+                              <button
+                                onClick={(e) => handleWishlistToggle(product._id, e)}
+                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                                  inWishlist
+                                    ? 'bg-red-50 hover:bg-red-100'
+                                    : 'bg-slate-100 hover:bg-slate-200'
+                                }`}
+                              >
+                                <Heart
+                                  className={`w-4 h-4 ${
+                                    inWishlist ? 'text-red-500 fill-red-500' : 'text-slate-600'
+                                  }`}
+                                />
                               </button>
                             </div>
                           </div>

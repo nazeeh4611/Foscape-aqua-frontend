@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthModal from "../Components/Reuse/AuthModal.jsx";
 import OtpModal from "../Components/Reuse/OtpModal.jsx";
 import logo from "../assets/logo.png";
@@ -8,7 +8,22 @@ import { useNavigate, Link } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ClientId } from "../Base/Base.js";
 import { useAuth } from "../Context.js/Auth.jsx";
-import { Menu, X } from "lucide-react";
+import { useCartWishlist } from '../Context.js/Cartwishlist';
+import {
+  Menu,
+  X,
+  ShoppingCart,
+  Heart,
+  User,
+  LogOut,
+  Package,
+  ChevronDown,
+  Trash2,
+  Plus,
+  Minus,
+  Eye,
+} from "lucide-react";
+import { useToast } from "../Context.js/ToastContext.jsx";
 
 const Navbar = () => {
   const { user, isLogged, checkAuthStatus, logout } = useAuth();
@@ -17,7 +32,44 @@ const Navbar = () => {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [updating, setUpdating] = useState({});
+  const  showToast = useToast();
+
+  
   const navigate = useNavigate();
+  
+  const {
+    cart,
+    wishlist,
+    cartCount,
+    wishlistCount,
+    removeFromCart,
+    updateCartItem,
+    removeFromWishlist,
+    addToCart,
+  } = useCartWishlist();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isCartOpen || isWishlistOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isCartOpen, isWishlistOpen]);
 
   const handleRegisterSuccess = (email) => {
     setRegisteredEmail(email);
@@ -28,19 +80,21 @@ const Navbar = () => {
     await checkAuthStatus();
     setShowAuthModal(false);
   };
-
   const handleLogout = async () => {
     try {
       await axios.post(`${baseurl}user/logout`, {}, { withCredentials: true });
+      
+      showToast.success("Logged out successfully!");
+      
       logout();
       setShowProfileDropdown(false);
       setIsMenuOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
+      showToast.error("Logout failed. Please try again.");
     }
   };
-
   const handleLogoClick = () => {
     navigate("/");
   };
@@ -54,12 +108,50 @@ const Navbar = () => {
     setRegisteredEmail("");
   };
 
+  const handleQuantityChange = async (productId, currentQuantity, change) => {
+    const newQuantity = currentQuantity + change;
+    if (newQuantity < 1) return;
+    setUpdating((prev) => ({ ...prev, [productId]: true }));
+    await updateCartItem(productId, newQuantity);
+    setUpdating((prev) => ({ ...prev, [productId]: false }));
+  };
+
+  const handleRemoveFromCart = async (productId) => {
+    setUpdating((prev) => ({ ...prev, [productId]: true }));
+    await removeFromCart(productId);
+    setUpdating((prev) => ({ ...prev, [productId]: false }));
+  };
+
+  const handleRemoveFromWishlist = async (productId) => {
+    await removeFromWishlist(productId);
+  };
+
+  const handleMoveToCart = async (productId) => {
+    const result = await addToCart(productId, 1);
+    if (result.success) {
+      await removeFromWishlist(productId);
+    }
+  };
+
+  const handleViewCart = () => {
+    setIsCartOpen(false);
+    navigate("/cart");
+  };
+
+  const handleViewWishlist = () => {
+    setIsWishlistOpen(false);
+    navigate("/wishlist");
+  };
+
   return (
     <GoogleOAuthProvider clientId={ClientId}>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-teal-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+            <div
+              className="flex items-center cursor-pointer"
+              onClick={handleLogoClick}
+            >
               <div className="flex items-center space-x-3">
                 <img
                   src={logo}
@@ -103,6 +195,35 @@ const Navbar = () => {
             </nav>
 
             <div className="flex items-center space-x-4">
+              {/* Cart and Wishlist Icons */}
+              {isLogged && (
+                <>
+                  <button
+                    onClick={() => setIsWishlistOpen(true)}
+                    className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
+                  >
+                    <Heart className="w-6 h-6 text-teal-600" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setIsCartOpen(true)}
+                    className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
+                  >
+                    <ShoppingCart className="w-6 h-6 text-teal-600" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </>
+              )}
+
               <div className="hidden md:block">
                 {!isLogged ? (
                   <button
@@ -129,9 +250,7 @@ const Navbar = () => {
                           <p className="text-sm font-semibold text-gray-700">
                             {user?.name}
                           </p>
-                          <p className="text-xs text-teal-600">
-                            {user?.email}
-                          </p>
+                          <p className="text-xs text-teal-600">{user?.email}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -169,9 +288,7 @@ const Navbar = () => {
                         <p className="text-sm font-semibold text-gray-700">
                           {user?.name}
                         </p>
-                        <p className="text-xs text-teal-600">
-                          {user?.email}
-                        </p>
+                        <p className="text-xs text-teal-600">{user?.email}</p>
                       </div>
                       <Link
                         to="/profile"
@@ -207,7 +324,7 @@ const Navbar = () => {
 
           <div
             className={`md:hidden transition-all duration-300 ease-in-out ${
-              isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
             } overflow-hidden`}
           >
             <nav className="px-4 py-4 space-y-4 border-t border-teal-100">
@@ -264,9 +381,7 @@ const Navbar = () => {
                       <p className="text-sm font-semibold text-gray-700">
                         {user?.name}
                       </p>
-                      <p className="text-xs text-teal-600">
-                        {user?.email}
-                      </p>
+                      <p className="text-xs text-teal-600">{user?.email}</p>
                     </div>
                     <Link
                       to="/profile"
@@ -291,6 +406,268 @@ const Navbar = () => {
           </div>
         </div>
       </header>
+
+      {/* Cart Sidebar */}
+      {(isCartOpen || isWishlistOpen) && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+          onClick={() => {
+            setIsCartOpen(false);
+            setIsWishlistOpen(false);
+          }}
+        />
+      )}
+
+      <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${
+          isCartOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          <div className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white p-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Shopping Cart</h2>
+              </div>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-teal-100">{cartCount} items</p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            {!cart || cart.items.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="w-10 h-10 text-slate-400" />
+                </div>
+                <p className="text-slate-600 font-medium">Your cart is empty</p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Add products to get started
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cart.items.map((item) => (
+                  <div
+                    key={item.product._id}
+                    className="bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-all"
+                  >
+                    <div className="flex gap-3">
+                      <img
+                        src={item.product.images?.[0] || "/placeholder.jpg"}
+                        alt={item.product.name}
+                        className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                        onClick={() => {
+                          setIsCartOpen(false);
+                          navigate(`/product/${item.product._id}`);
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="font-semibold text-sm text-slate-800 line-clamp-2 cursor-pointer hover:text-teal-600"
+                          onClick={() => {
+                            setIsCartOpen(false);
+                            navigate(`/product/${item.product._id}`);
+                          }}
+                        >
+                          {item.product.name}
+                        </h3>
+                        <p className="text-sm font-bold text-teal-600 mt-1">
+                          ₹{item.price}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.product._id,
+                                  item.quantity,
+                                  -1
+                                )
+                              }
+                              disabled={
+                                updating[item.product._id] || item.quantity <= 1
+                              }
+                              className="w-6 h-6 rounded bg-white hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.product._id,
+                                  item.quantity,
+                                  1
+                                )
+                              }
+                              disabled={
+                                updating[item.product._id] ||
+                                item.quantity >= item.product.stock
+                              }
+                              className="w-6 h-6 rounded bg-white hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveFromCart(item.product._id)}
+                            disabled={updating[item.product._id]}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {cart && cart.items.length > 0 && (
+            <div className="border-t border-slate-200 p-4 bg-white">
+              <div className="flex justify-between mb-4">
+                <span className="font-semibold text-slate-700">Total:</span>
+                <span className="text-2xl font-bold text-teal-600">
+                  ₹{cart.totalAmount}
+                </span>
+              </div>
+              <button
+                onClick={handleViewCart}
+                className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-400 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                View Cart
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Wishlist Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${
+          isWishlistOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          <div className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white p-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Heart className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Wishlist</h2>
+              </div>
+              <button
+                onClick={() => setIsWishlistOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-teal-100">{wishlistCount} items</p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            {!wishlist || wishlist.products.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Heart className="w-10 h-10 text-slate-400" />
+                </div>
+                <p className="text-slate-600 font-medium">
+                  Your wishlist is empty
+                </p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Save your favorite products
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {wishlist.products.map((product) => (
+                  <div
+                    key={product._id}
+                    className="bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-all"
+                  >
+                    <div className="flex gap-3">
+                      <img
+                        src={product.images?.[0] || "/placeholder.jpg"}
+                        alt={product.name}
+                        className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                        onClick={() => {
+                          setIsWishlistOpen(false);
+                          navigate(`/product/${product._id}`);
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="font-semibold text-sm text-slate-800 line-clamp-2 cursor-pointer hover:text-teal-600"
+                          onClick={() => {
+                            setIsWishlistOpen(false);
+                            navigate(`/product/${product._id}`);
+                          }}
+                        >
+                          {product.name}
+                        </h3>
+                        <p className="text-sm font-bold text-teal-600 mt-1">
+                          ₹{product.price}
+                        </p>
+                        {product.stock === 0 ? (
+                          <p className="text-xs text-red-500 font-medium mt-1">
+                            Out of Stock
+                          </p>
+                        ) : product.stock < 10 ? (
+                          <p className="text-xs text-orange-500 font-medium mt-1">
+                            Only {product.stock} left
+                          </p>
+                        ) : (
+                          <p className="text-xs text-green-600 font-medium mt-1">
+                            In Stock
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => handleMoveToCart(product._id)}
+                            disabled={product.stock === 0}
+                            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-teal-500 to-cyan-400 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            Add to Cart
+                          </button>
+                          <button
+                            onClick={() => handleRemoveFromWishlist(product._id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {wishlist && wishlist.products.length > 0 && (
+            <div className="border-t border-slate-200 p-4 bg-white">
+              <button
+                onClick={handleViewWishlist}
+                className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-400 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                View All Wishlist
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       <AuthModal
         show={showAuthModal}

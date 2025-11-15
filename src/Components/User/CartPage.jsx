@@ -132,6 +132,10 @@ export const CartPage = () => {
     }
   };
 
+  const handleCheckout = () => {
+    navigate('/checkout');
+  };
+
   if (cartLoading) {
     return (
       <>
@@ -327,7 +331,10 @@ export const CartPage = () => {
                     </div>
                   </div>
 
-                  <button className="w-full px-6 py-4 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all mb-3">
+                  <button 
+                    onClick={handleCheckout}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all mb-3"
+                  >
                     Proceed to Checkout
                   </button>
 

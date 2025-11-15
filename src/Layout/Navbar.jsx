@@ -4,7 +4,7 @@ import OtpModal from "../Components/Reuse/OtpModal.jsx";
 import logo from "../assets/logo.png";
 import axios from "axios";
 import { baseurl } from "../Base/Base.js";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ClientId } from "../Base/Base.js";
 import { useAuth } from "../Context.js/Auth.jsx";
@@ -40,7 +40,25 @@ const Navbar = () => {
 
   
   const navigate = useNavigate();
+  const location = useLocation();
+
+const getHeadingColor = () => {
+  const path = location.pathname;
   
+  if (path === '/' || path === '/home') {
+    return 'text-teal-600';
+  } else if (path === '/service' || path.startsWith('/service')) {
+    return 'text-teal-600';
+  } else if (path === '/categories' || path.startsWith('/categories')) {
+    return 'text-teal-600';
+  } else if (path === '/about' || path.startsWith('/about')) {
+    return 'text-teal-600';
+  } else if (path === '/contact' || path.startsWith('/contact')) {
+    return 'text-teal-600';
+  }
+  
+  return 'text-teal-600';
+};
   const {
     cart,
     wishlist,
@@ -162,37 +180,99 @@ const Navbar = () => {
             </div>
 
             <nav className="hidden md:flex items-center space-x-8">
-              <Link to="/" className="relative group py-2">
-                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  Home
-                </span>
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-              <Link to="/service" className="relative group py-2">
-                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  Service
-                </span>
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-              <Link to="/categories" className="relative group py-2">
-                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  Shop
-                </span>
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-              <Link to="/about" className="relative group py-2">
-                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  About
-                </span>
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-              <Link to="/contact" className="relative group py-2">
-                <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors duration-300">
-                  Contact
-                </span>
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-            </nav>
+  {/* Home */}
+  <Link to="/" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname === "/" || location.pathname === "/home"
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      Home
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname === "/" || location.pathname === "/home"
+          ? "w-full"
+          : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
+
+  {/* Service */}
+  <Link to="/service" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname.startsWith("/service")
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      Service
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname.startsWith("/service") ? "w-full" : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
+
+  {/* Shop */}
+  <Link to="/categories" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname.startsWith("/categories")
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      Shop
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname.startsWith("/categories") ? "w-full" : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
+
+  {/* About */}
+  <Link to="/about" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname.startsWith("/about")
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      About
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname.startsWith("/about") ? "w-full" : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
+
+  {/* Contact */}
+  <Link to="/contact" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname.startsWith("/contact")
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      Contact
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname.startsWith("/contact") ? "w-full" : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
+</nav>
+
 
             <div className="flex items-center space-x-4">
               {/* Cart and Wishlist Icons */}

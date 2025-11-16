@@ -83,12 +83,18 @@ export default function AdminCategoryPage() {
     fetchCategories();
   }, []);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${baseurl}admin/categories`);
+      const response = await axios.get(`${baseurl}admin/categories`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+      
+      );
       setCategories(response.data.categories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -182,7 +188,8 @@ export default function AdminCategoryPage() {
       if (editingCategory) {
         await axios.put(`${baseurl}admin/edit-category/${editingCategory._id}`, formDataToSend, {
           headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',    
+              Authorization: `Bearer ${token}`
           }
         });
         showToast('Category updated successfully!', 'success');
@@ -246,7 +253,11 @@ export default function AdminCategoryPage() {
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`${baseurl}admin/delete-category/${deleteConfirm.categoryId}`);
+      await axios.delete(`${baseurl}admin/delete-category/${deleteConfirm.categoryId}`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       showToast('Category deleted successfully!', 'success');
       await fetchCategories();
     } catch (error) {
@@ -266,7 +277,11 @@ export default function AdminCategoryPage() {
     const newStatus = category.status === 'Active' ? 'Inactive' : 'Active';
 
     try {
-      await axios.put(`${baseurl}admin/categories/${id}/status`, { status: newStatus });
+      await axios.put(`${baseurl}admin/categories/${id}/status`, { status: newStatus },{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       showToast('Status updated!', 'success');
       await fetchCategories();
     } catch (error) {

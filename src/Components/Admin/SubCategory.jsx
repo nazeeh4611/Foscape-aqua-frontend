@@ -86,12 +86,16 @@ export default function AdminSubCategoryPage() {
     fetchCategories();
   }, []);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   const fetchSubCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${baseurl}admin/subcategories`);
+      const response = await axios.get(`${baseurl}admin/subcategories`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setSubCategories(response.data.subCategories);
     } catch (error) {
       console.error('Error fetching subcategories:', error);
@@ -103,7 +107,11 @@ export default function AdminSubCategoryPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${baseurl}admin/categories`);
+      const response = await axios.get(`${baseurl}admin/categories`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setCategories(response.data.categories);
     } catch (error) {
       console.error('Error fetching categories:', error);

@@ -94,12 +94,16 @@ export default function AdminGalleryPage() {
     fetchGallery();
   }, []);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   const fetchGallery = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${baseurl}admin/gallery`);
+      const response = await axios.get(`${baseurl}admin/gallery`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setGalleryItems(response.data.gallery);
     } catch (error) {
       console.error('Error fetching gallery:', error);

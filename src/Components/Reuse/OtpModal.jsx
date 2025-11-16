@@ -4,7 +4,7 @@ import { baseurl } from "../../Base/Base";
 import { toast } from "react-toastify";
 import { X, ArrowRight, Lock } from "lucide-react";
 
-const OtpModal = ({ show, onClose, email }) => {
+const OtpModal = ({ show, onClose, email, onVerifySuccess }) => {
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
@@ -48,6 +48,11 @@ const OtpModal = ({ show, onClose, email }) => {
         localStorage.setItem("token", res.data.token);
         setOtp("");
         onClose();
+        
+        // Call the callback to refresh auth state in Navbar
+        if (onVerifySuccess) {
+          onVerifySuccess();
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "OTP verification failed");

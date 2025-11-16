@@ -15,6 +15,8 @@ import { OrderDetailsPage } from "../Components/User/OrderDetails";
 import { CheckoutPage } from "../Components/User/CheckoutPage";
 import { ProfilePage } from "../Components/User/ProfilePage";
 import Gallery from "../Components/User/GalleryPage";
+import { UserPrivateRoute } from "./Private";
+
 
 function UserRoute() {
   return (
@@ -23,20 +25,72 @@ function UserRoute() {
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/:categoryId/sub-category" element={<SubCategoriesPage />} />
       <Route path="/products/subcategory/:subCategoryId" element={<ProductsPage />} />
-      <Route path="/product/:id" element={<ProductDetailsPage />} />   
-      <Route path="/cart" element={<CartPage />} />
-      <Route path="/wishlist" element={<WishlistPage/>} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
-      <Route path="/orders" element={<OrdersPage />} />
-      <Route path="/order-details/:orderId" element={<OrderDetailsPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/about" element={<AboutPage/>} />
-      <Route path="/service" element={<ServicesPage/>} />
-      <Route path="/contact" element={<ContactPage/>} />
-      <Route path="/gallery" element={<Gallery/>} />
+      <Route path="/product/:id" element={<ProductDetailsPage />} />
+
+      <Route
+        path="/cart"
+        element={
+          <UserPrivateRoute>
+            <CartPage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+        path="/wishlist"
+        element={
+          <UserPrivateRoute>
+            <WishlistPage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <UserPrivateRoute>
+            <CheckoutPage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+        path="/orders"
+        element={
+          <UserPrivateRoute>
+            <OrdersPage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+        path="/order-details/:orderId"
+        element={
+          <UserPrivateRoute>
+            <OrderDetailsPage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <UserPrivateRoute>
+            <ProfilePage />
+          </UserPrivateRoute>
+        }
+      />
+      <Route
+      path="/order-success/:orderId"
+       element={
+        <UserPrivateRoute>
+       <OrderSuccessPage />
+       </UserPrivateRoute>
+       } />
+
+
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/service" element={<ServicesPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/gallery" element={<Gallery />} />
     </Routes>
   );
 }
 
 export default UserRoute;
+

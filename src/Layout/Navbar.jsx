@@ -126,6 +126,10 @@ const getHeadingColor = () => {
     setRegisteredEmail("");
   };
 
+  const handleOtpVerifySuccess = async () => {
+    await checkAuthStatus();
+  };
+
   const handleQuantityChange = async (productId, currentQuantity, change) => {
     const newQuantity = currentQuantity + change;
     if (newQuantity < 1) return;
@@ -774,10 +778,11 @@ const getHeadingColor = () => {
         onLoginSuccess={handleLoginSuccess}
       />
 
-      <OtpModal
+       <OtpModal
         show={showOtpModal}
         onClose={handleOtpModalClose}
         email={registeredEmail}
+        onVerifySuccess={handleOtpVerifySuccess}
       />
     </GoogleOAuthProvider>
   );

@@ -39,7 +39,7 @@ export default function SalesReport() {
   const [toasts, setToasts] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   useEffect(() => {
     fetchReport();

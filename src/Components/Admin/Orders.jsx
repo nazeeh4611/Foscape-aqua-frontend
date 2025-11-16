@@ -374,7 +374,7 @@ export default function AdminOrderPage() {
     fetchOrders();
   }, []);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   const fetchOrders = async () => {
     try {

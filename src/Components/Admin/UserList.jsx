@@ -191,7 +191,7 @@ export default function AdminUserPage() {
     fetchUsers();
   }, []);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   const fetchUsers = async () => {
     try {

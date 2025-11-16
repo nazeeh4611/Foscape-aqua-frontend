@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
   Package,
@@ -16,40 +16,50 @@ import {
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSubOpen, setIsSubOpen] = useState(false);
 
   const toggleSubmenu = () => setIsSubOpen(!isSubOpen);
-
   const isActive = (path) => location.pathname === path;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (location.pathname.startsWith("/admin/categories")) {
       setIsSubOpen(true);
     }
   }, [location.pathname]);
 
   const handleLinkClick = () => {
-    if (window.innerWidth < 1024) {
-      toggleSidebar();
-    }
+    if (window.innerWidth < 1024) toggleSidebar();
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+    });
+    navigate("/admin/login");
   };
 
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden transition-opacity ${
+        className={`fixed inset-0 bg-black bg-opacity-40 z-20 lg:hidden transition-opacity ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={toggleSidebar}
       ></div>
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transform transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } flex flex-col h-screen`}
+        className={`fixed lg:static inset-y-0 left-0 z-30 w-64 
+          bg-gradient-to-b from-[#144E8C] to-[#78CDD1] 
+          text-white shadow-xl rounded-r-2xl
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          flex flex-col h-screen`}
       >
-        <div className="p-6 border-b border-gray-700">
-          <h1 className="text-2xl font-bold">Admin Panel</h1>
+        <div className="p-6 bg-white/10 border-b border-white/20">
+          <h1 className="text-2xl font-bold tracking-wide">FOSCAPE ADMIN</h1>
         </div>
 
         <nav className="flex-1 p-4">
@@ -58,60 +68,57 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/dashboard"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
+                className={`flex items-center p-3 rounded-xl transition-all ${
                   isActive("/admin/dashboard")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <Home className="w-5 h-5" />
-                <span className="ml-3">Dashboard</span>
+                <span className="ml-3 font-medium">Dashboard</span>
               </Link>
             </li>
 
             <li>
               <button
                 onClick={toggleSubmenu}
-                className={`flex items-center justify-between w-full p-3 rounded-lg transition ${
+                className={`flex items-center justify-between w-full p-3 rounded-xl transition ${
                   location.pathname.startsWith("/admin/categories")
-                    ? "bg-gray-800 text-white"
-                    : "bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <div className="flex items-center">
                   <LayoutGrid className="w-5 h-5" />
-                  <span className="ml-3">Categories</span>
+                  <span className="ml-3 font-medium">Categories</span>
                 </div>
-                {isSubOpen ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
+                {isSubOpen ? <ChevronUp /> : <ChevronDown />}
               </button>
 
               {isSubOpen && (
-                <ul className="mt-2 ml-8 space-y-1">
+                <ul className="mt-2 ml-6 space-y-1">
                   <li>
                     <Link
                       to="/admin/categories/main"
                       onClick={handleLinkClick}
-                      className={`block p-2 rounded transition ${
+                      className={`block p-2 rounded-lg text-sm transition ${
                         isActive("/admin/categories/main")
-                          ? "bg-gray-800 text-white"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                          ? "bg-white text-[#144E8C] shadow"
+                          : "text-white/90 hover:bg-white/20"
                       }`}
                     >
                       Main Category
                     </Link>
                   </li>
+
                   <li>
                     <Link
                       to="/admin/categories/sub"
                       onClick={handleLinkClick}
-                      className={`block p-2 rounded transition ${
+                      className={`block p-2 rounded-lg text-sm transition ${
                         isActive("/admin/categories/sub")
-                          ? "bg-gray-800 text-white"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                          ? "bg-white text-[#144E8C] shadow"
+                          : "text-white/90 hover:bg-white/20"
                       }`}
                     >
                       Sub Category
@@ -125,14 +132,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/products"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
+                className={`flex items-center p-3 rounded-xl transition ${
                   isActive("/admin/products")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <Package className="w-5 h-5" />
-                <span className="ml-3">Products</span>
+                <span className="ml-3 font-medium">Products</span>
               </Link>
             </li>
 
@@ -140,14 +147,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/orders"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
-                  isActive("/orders")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                className={`flex items-center p-3 rounded-xl transition ${
+                  isActive("/admin/orders")
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <ShoppingBag className="w-5 h-5" />
-                <span className="ml-3">Orders</span>
+                <span className="ml-3 font-medium">Orders</span>
               </Link>
             </li>
 
@@ -155,14 +162,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/users"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
-                  isActive("/users")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                className={`flex items-center p-3 rounded-xl transition ${
+                  isActive("/admin/users")
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <Users className="w-5 h-5" />
-                <span className="ml-3">Users</span>
+                <span className="ml-3 font-medium">Users</span>
               </Link>
             </li>
 
@@ -170,14 +177,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/gallery"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
+                className={`flex items-center p-3 rounded-xl transition ${
                   isActive("/admin/gallery")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <Images className="w-5 h-5" />
-                <span className="ml-3">Gallery</span>
+                <span className="ml-3 font-medium">Gallery</span>
               </Link>
             </li>
 
@@ -185,14 +192,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/sales"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
+                className={`flex items-center p-3 rounded-xl transition ${
                   isActive("/admin/sales")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <BarChart4 className="w-5 h-5" />
-                <span className="ml-3">Sales</span>
+                <span className="ml-3 font-medium">Sales</span>
               </Link>
             </li>
 
@@ -200,21 +207,24 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <Link
                 to="/admin/settings"
                 onClick={handleLinkClick}
-                className={`flex items-center p-3 rounded-lg transition ${
+                className={`flex items-center p-3 rounded-xl transition ${
                   isActive("/admin/settings")
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
               >
                 <Settings className="w-5 h-5" />
-                <span className="ml-3">Settings</span>
+                <span className="ml-3 font-medium">Settings</span>
               </Link>
             </li>
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
-          <button className="flex items-center justify-center w-full p-3 rounded-lg bg-red-600 hover:bg-red-700 transition">
+        <div className="p-4 border-t border-white/20">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center w-full p-3 rounded-xl bg-red-500 hover:bg-red-600 transition-all shadow-md"
+          >
             <LogOut className="w-5 h-5 mr-2" />
             Logout
           </button>

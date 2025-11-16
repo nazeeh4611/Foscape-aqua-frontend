@@ -120,7 +120,7 @@ export default function AquariumProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('Atoken');
 
   useEffect(() => {
     fetchProducts();
@@ -155,7 +155,11 @@ export default function AquariumProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${baseurl}admin/categories`);
+      const response = await axios.get(`${baseurl}admin/categories`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setCategories(response.data.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -170,7 +174,11 @@ export default function AquariumProductsPage() {
     }
     
     try {
-      const response = await axios.get(`${baseurl}admin/subcategory/${categoryId}`);
+      const response = await axios.get(`${baseurl}admin/subcategory/${categoryId}`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setSubCategories(response.data.subCategories || []);
     } catch (error) {
       console.error('Error fetching filtered subcategories:', error);

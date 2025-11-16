@@ -199,6 +199,24 @@ const getHeadingColor = () => {
       } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
     ></span>
   </Link>
+  <Link to="/gallery" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname === "/gallery" || location.pathname === "/gallery"
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      gallery
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname === "/gallery" || location.pathname === "/gallery"
+          ? "w-full"
+          : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
 
   {/* Service */}
   <Link to="/service" className="relative group py-2">

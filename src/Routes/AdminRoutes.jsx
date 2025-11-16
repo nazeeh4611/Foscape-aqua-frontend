@@ -5,6 +5,10 @@ import AdminCategoryPage from "../Components/Admin/Category";
 import AdminSubCategoryPage from "../Components/Admin/SubCategory";
 import AquariumProductsPage from "../Components/Admin/Products";
 import { Menu } from "lucide-react";
+import AdminUserPage from "../Components/Admin/UserList";
+import AdminOrderPage from "../Components/Admin/Orders";
+import AdminGalleryPage from "../Components/Admin/Gallery";
+import SalesReport from "../Components/Admin/Sales";
 
 const AdminLayout = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,6 +42,10 @@ function AdminRoute() {
         <Route path="categories/main" element={<AdminCategoryPage />} />
         <Route path="categories/sub" element={<AdminSubCategoryPage />} />
         <Route path="products" element={<AquariumProductsPage />} />
+        <Route path="users" element={<AdminUserPage />} />
+        <Route path="orders" element={<AdminOrderPage />} />
+        <Route path="gallery" element={<AdminGalleryPage />} />
+        <Route path="sales" element={< SalesReport/>} />
       </Route>
     </Routes>
   );

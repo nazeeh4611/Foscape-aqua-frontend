@@ -66,7 +66,7 @@ const AboutPage = () => {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#144E8C] to-[#78CDD1] opacity-10 rounded-2xl"></div>
                 <img
-                  src="https://images.unsplash.com/photo-1492126834785-a5f9d1b1ea75?auto=format&fit=crop&w=800&h=600"
+                  src="/logo.png"
                   alt="Aquarium"
                   className="rounded-2xl shadow-lg relative z-10"
                 />

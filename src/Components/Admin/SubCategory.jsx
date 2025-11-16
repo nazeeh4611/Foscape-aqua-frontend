@@ -288,7 +288,7 @@ export default function AdminSubCategoryPage() {
     const newStatus = subCategory.status === 'Active' ? 'Inactive' : 'Active';
 
     try {
-      await axios.patch(`${baseurl}admin/subcategories/${id}/status`, { status: newStatus }, {
+      await axios.put(`${baseurl}admin/subcategories/${id}/status`, { status: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast('Status updated!', 'success');

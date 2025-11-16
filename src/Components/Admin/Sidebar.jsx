@@ -8,6 +8,10 @@ import {
   ChevronDown,
   ChevronUp,
   LogOut,
+  Images,
+  Settings,
+  BarChart4,
+  Home,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -50,6 +54,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
+            <li>
+              <Link
+                to="/admin/dashboard"
+                onClick={handleLinkClick}
+                className={`flex items-center p-3 rounded-lg transition ${
+                  isActive("/admin/dashboard")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Home className="w-5 h-5" />
+                <span className="ml-3">Dashboard</span>
+              </Link>
+            </li>
+
             <li>
               <button
                 onClick={toggleSubmenu}
@@ -119,7 +138,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
             <li>
               <Link
-                to="/orders"
+                to="/admin/orders"
                 onClick={handleLinkClick}
                 className={`flex items-center p-3 rounded-lg transition ${
                   isActive("/orders")
@@ -134,7 +153,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
             <li>
               <Link
-                to="/users"
+                to="/admin/users"
                 onClick={handleLinkClick}
                 className={`flex items-center p-3 rounded-lg transition ${
                   isActive("/users")
@@ -144,6 +163,51 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <Users className="w-5 h-5" />
                 <span className="ml-3">Users</span>
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/admin/gallery"
+                onClick={handleLinkClick}
+                className={`flex items-center p-3 rounded-lg transition ${
+                  isActive("/admin/gallery")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Images className="w-5 h-5" />
+                <span className="ml-3">Gallery</span>
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/admin/sales"
+                onClick={handleLinkClick}
+                className={`flex items-center p-3 rounded-lg transition ${
+                  isActive("/admin/sales")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <BarChart4 className="w-5 h-5" />
+                <span className="ml-3">Sales</span>
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/admin/settings"
+                onClick={handleLinkClick}
+                className={`flex items-center p-3 rounded-lg transition ${
+                  isActive("/admin/settings")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Settings className="w-5 h-5" />
+                <span className="ml-3">Settings</span>
               </Link>
             </li>
           </ul>

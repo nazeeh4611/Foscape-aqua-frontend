@@ -14,6 +14,7 @@ import { OrdersPage } from "../Components/User/Orders";
 import { OrderDetailsPage } from "../Components/User/OrderDetails";
 import { CheckoutPage } from "../Components/User/CheckoutPage";
 import { ProfilePage } from "../Components/User/ProfilePage";
+import Gallery from "../Components/User/GalleryPage";
 
 function UserRoute() {
   return (
@@ -33,6 +34,7 @@ function UserRoute() {
       <Route path="/about" element={<AboutPage/>} />
       <Route path="/service" element={<ServicesPage/>} />
       <Route path="/contact" element={<ContactPage/>} />
+      <Route path="/gallery" element={<Gallery/>} />
     </Routes>
   );
 }

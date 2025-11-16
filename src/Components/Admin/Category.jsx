@@ -266,7 +266,7 @@ export default function AdminCategoryPage() {
     const newStatus = category.status === 'Active' ? 'Inactive' : 'Active';
 
     try {
-      await axios.patch(`${baseurl}admin/categories/${id}/status`, { status: newStatus });
+      await axios.put(`${baseurl}admin/categories/${id}/status`, { status: newStatus });
       showToast('Status updated!', 'success');
       await fetchCategories();
     } catch (error) {

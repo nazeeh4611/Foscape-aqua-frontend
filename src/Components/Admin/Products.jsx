@@ -480,7 +480,7 @@ export default function AquariumProductsPage() {
     const newStatus = product.status === 'Active' ? 'Inactive' : 'Active';
 
     try {
-      await axios.patch(`${baseurl}admin/products/${id}/status`, { status: newStatus }, {
+      await axios.put(`${baseurl}admin/products/${id}/status`, { status: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast('Status updated!', 'success');

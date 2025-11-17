@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Layout/Navbar'
 import Hero from '../../Layout/Hero'
@@ -478,20 +478,27 @@ const Testimonials = () => {
   );
 };
 
+
+
+
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const sliderRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const animationRef = useRef(null);
+
+  const speed = 1.2; // Smooth speed (pixels per frame)
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await axios.get(`${baseurl}user/products/featured`);
-  
-      if (response.data.success) {
-        setProducts(response.data.products);
-      }
-    } catch (error) {
-      console.error("Error fetching featured products:", error);
+      const res = await axios.get(`${baseurl}user/products/featured`);
+      if (res.data.success) setProducts(res.data.products);
+    } catch (err) {
+      console.log("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -501,92 +508,179 @@ const FeaturedProducts = () => {
     fetchFeaturedProducts();
   }, []);
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+  // ✨ SMOOTH AUTO-SCROLL with requestAnimationFrame (60fps)
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider || products.length === 0) return;
+
+    const animate = () => {
+      if (!isDraggingRef.current) {
+        slider.scrollLeft += speed;
+
+        // Seamless loop at halfway point
+        if (slider.scrollLeft >= slider.scrollWidth / 2) {
+          slider.scrollLeft = 0;
+        }
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [products.length, speed]);
+
+  // 🎯 DRAG/TOUCH HANDLERS (Mobile optimized)
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const start = (e) => {
+      isDraggingRef.current = true;
+      slider.style.scrollBehavior = 'auto';
+      slider.classList.add("grabbing");
+      startXRef.current = e.pageX || e.touches?.[0].pageX;
+      scrollLeftRef.current = slider.scrollLeft;
+    };
+
+    const end = () => {
+      isDraggingRef.current = false;
+      slider.classList.remove("grabbing");
+    };
+
+    const move = (e) => {
+      if (!isDraggingRef.current) return;
+      e.preventDefault();
+      const x = e.pageX || e.touches?.[0].pageX;
+      const walk = (x - startXRef.current) * 2.5; // Drag sensitivity
+      slider.scrollLeft = scrollLeftRef.current - walk;
+    };
+
+    // Passive listeners for better mobile performance
+    slider.addEventListener("mousedown", start, { passive: true });
+    slider.addEventListener("touchstart", start, { passive: true });
+    slider.addEventListener("mousemove", move, { passive: false });
+    slider.addEventListener("touchmove", move, { passive: false });
+    slider.addEventListener("mouseup", end, { passive: true });
+    slider.addEventListener("mouseleave", end, { passive: true });
+    slider.addEventListener("touchend", end, { passive: true });
+
+    return () => {
+      slider.removeEventListener("mousedown", start);
+      slider.removeEventListener("touchstart", start);
+      slider.removeEventListener("mousemove", move);
+      slider.removeEventListener("touchmove", move);
+      slider.removeEventListener("mouseup", end);
+      slider.removeEventListener("mouseleave", end);
+      slider.removeEventListener("touchend", end);
+    };
+  }, []);
+
+  const handleClick = (id) => {
+    // Prevent navigation during drag
+    if (!isDraggingRef.current) {
+      navigate(`/product/${id}`);
+    }
   };
 
   if (loading) {
     return (
-      <div className="w-full py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="animate-pulse">
-            <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
-            <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto"></div>
-          </div>
+      <div className="w-full py-16 flex justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-10 bg-slate-300 w-40 mx-auto mb-4 rounded"></div>
+          <div className="h-6 bg-slate-200 w-60 mx-auto rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full py-16 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 mb-12">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Featured Products</h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Check out our handpicked selection of premium products
-          </p>
-        </div>
+    <div className="w-full py-8 md:py-14 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 mb-6 md:mb-10 text-center">
+        <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-2">
+          Featured Products
+        </h2>
+        <p className="text-base md:text-lg text-slate-600">
+          Check out our premium selection
+        </p>
       </div>
 
-      <div className="relative">
-        <div className="flex gap-6 animate-scroll">
-          {[...products, ...products].map((product, index) => (
-            <div 
-              key={index} 
-              className="flex-shrink-0 w-80"
-              onClick={() => handleProductClick(product._id)}
-            >
-              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden cursor-pointer">
-                <div className="relative h-64 bg-gradient-to-br from-slate-100 to-blue-100">
-                  <img 
-                    src={product.images?.[0]} 
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                  {product.discount > 0 && (
-                    <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                      {product.discount}% OFF
-                    </div>
-                  )}
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-slate-900 mb-2 truncate">{product.name}</h3>
-                  <p className="text-slate-600 mb-4 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                      {product.discount > 0 && (
-                        <span className="ml-2 text-sm text-slate-500 line-through">
-                          ₹{(product.price / (1 - product.discount / 100)).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                    <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
-                      View
-                    </button>
+      {/* 🚀 SMOOTH SCROLL CONTAINER */}
+      <div
+        ref={sliderRef}
+        className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none"
+        style={{ 
+          WebkitOverflowScrolling: 'touch', // iOS momentum scrolling
+          scrollbarWidth: 'none'
+        }}
+      >
+        {/* Triple products for seamless loop */}
+        {[...products, ...products, ...products].map((product, index) => (
+          <div
+            key={`${product._id}-${index}`}
+            className="flex-shrink-0 w-60 sm:w-64 md:w-72 lg:w-80"
+            onClick={() => handleClick(product._id)}
+          >
+            <div className="bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-xl md:rounded-2xl overflow-hidden">
+              <div className="relative h-48 sm:h-56 md:h-64 bg-slate-200">
+                <img
+                  src={product.images?.[0]}
+                  className="w-full h-full object-cover"
+                  alt={product.name}
+                  loading="lazy"
+                  draggable="false"
+                />
+                {product.discount > 0 && (
+                  <span className="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white px-2 py-1 md:px-3 text-xs md:text-sm rounded-full font-semibold">
+                    {product.discount}% OFF
+                  </span>
+                )}
+              </div>
+              <div className="p-4 md:p-5">
+                <h3 className="text-lg md:text-xl font-bold truncate mb-1">
+                  {product.name}
+                </h3>
+                <p className="text-sm md:text-base text-slate-600 line-clamp-2 mb-3">
+                  {product.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xl md:text-2xl font-bold text-slate-900">
+                      ₹{product.price}
+                    </span>
+                    {product.discount > 0 && (
+                      <span className="ml-2 text-xs md:text-sm line-through text-slate-400">
+                        ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
+                      </span>
+                    )}
                   </div>
+                  <button className="px-4 py-2 md:px-5 bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base rounded-lg transition-colors">
+                    View
+                  </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      <style jsx>{`
-        @keyframes scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { 
+          display: none; 
         }
-        .animate-scroll {
-          animation: scroll 30s linear infinite;
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
-        .animate-scroll:hover {
-          animation-play-state: paused;
+        .grabbing { 
+          cursor: grabbing !important; 
+        }
+        .grabbing * {
+          cursor: grabbing !important;
         }
       `}</style>
     </div>

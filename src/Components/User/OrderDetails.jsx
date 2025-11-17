@@ -53,68 +53,31 @@ export const OrderDetailsPage = () => {
   }, [orderId]);
 
   const downloadInvoice = async () => {
-    if (!invoiceRef.current) return;
-
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: invoiceRef.current.scrollWidth,
-        windowHeight: invoiceRef.current.scrollHeight,
-        foreignObjectRendering: false,
-        imageTimeout: 15000,
-        removeContainer: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const response = await axios.get(
+        `${baseurl}user/orders/${orderId}/generate-invoice`,
+        { 
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
+  
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${order.orderNumber}.pdf`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
       
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-
-      const imgWidth = 190;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 10;
-
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-      }
-
-      if (isSafari) {
-        const blob = pdf.output('blob');
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `invoice-${order.orderNumber}.pdf`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 100);
-      } else {
-        pdf.save(`invoice-${order.orderNumber}.pdf`);
-      }
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate invoice. Please try again or use a different browser.');
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
     }
   };
 

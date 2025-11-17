@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, FileText, FileSpreadsheet, TrendingUp, DollarSign, ShoppingCart, Users, Calendar, Filter, BarChart3, PieChart, Package } from 'lucide-react';
+import { baseurl } from '../../Base/Base';
+import axios from 'axios';
 
 const StatCard = ({ icon: Icon, title, value, subtitle, color }) => (
   <div className={`bg-white rounded-lg p-4 border-l-4 ${color} shadow-sm`}>
@@ -24,42 +26,8 @@ const Toast = ({ message, type, onClose }) => (
 );
 
 export default function SalesReport() {
-  const [reportData, setReportData] = useState({
-    summary: {
-      totalOrders: 156,
-      totalRevenue: 245890.50,
-      totalPaidRevenue: 198450.75,
-      averageOrderValue: 1576.22
-    },
-    ordersByStatus: {
-      Delivered: 89,
-      Processing: 34,
-      Pending: 18,
-      Cancelled: 15
-    },
-    paymentMethodStats: {
-      'Credit Card': 78,
-      'Cash on Delivery': 45,
-      'UPI': 33
-    },
-    topProducts: [
-      { name: 'Product A', quantity: 145, revenue: 45890.50, orders: 67 },
-      { name: 'Product B', quantity: 123, revenue: 38450.75, orders: 54 }
-    ],
-    topCustomers: [
-      { name: 'John Doe', email: 'john@example.com', orders: 12, totalSpent: 15678.90 },
-      { name: 'Jane Smith', email: 'jane@example.com', orders: 8, totalSpent: 12345.50 }
-    ],
-    salesOverTime: [
-      { date: '2024-01-15', orders: 23, revenue: 34567.89 },
-      { date: '2024-01-16', orders: 19, revenue: 28901.23 }
-    ],
-    orders: [
-      { orderNumber: 'ORD-001', date: '2024-01-15', customer: 'John Doe', items: 3, amount: 1234.56, status: 'Delivered', paymentStatus: 'Paid' },
-      { orderNumber: 'ORD-002', date: '2024-01-16', customer: 'Jane Smith', items: 2, amount: 987.65, status: 'Processing', paymentStatus: 'Paid' }
-    ]
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -71,29 +39,107 @@ export default function SalesReport() {
   const [toasts, setToasts] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  const token = localStorage.getItem('Atoken');
+
+  useEffect(() => {
+    fetchReport();
+  }, []);
+
   const showToast = (message, type = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
-  const downloadPDF = () => {
-    setIsDownloading(true);
-    setTimeout(() => {
-      showToast('PDF downloaded successfully', 'success');
-      setIsDownloading(false);
-    }, 1000);
+  const fetchReport = async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.status !== 'All') params.append('status', filters.status);
+      if (filters.paymentStatus !== 'All') params.append('paymentStatus', filters.paymentStatus);
+      params.append('groupBy', filters.groupBy);
+
+      const response = await axios.get(`${baseurl}admin/sales-report?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setReportData(response.data.report);
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      showToast('Failed to load sales report', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const downloadExcel = () => {
-    setIsDownloading(true);
-    setTimeout(() => {
-      showToast('Excel downloaded successfully', 'success');
+  const downloadPDF = async () => {
+    try {
+      setIsDownloading(true);
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.status !== 'All') params.append('status', filters.status);
+      if (filters.paymentStatus !== 'All') params.append('paymentStatus', filters.paymentStatus);
+
+      const response = await axios.get(`${baseurl}admin/sales-report/download-pdf?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `sales-report-${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      showToast('PDF downloaded successfully', 'success');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      showToast('Failed to download PDF', 'error');
+    } finally {
       setIsDownloading(false);
-    }, 1000);
+    }
+  };
+
+  const downloadExcel = async () => {
+    try {
+      setIsDownloading(true);
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.status !== 'All') params.append('status', filters.status);
+      if (filters.paymentStatus !== 'All') params.append('paymentStatus', filters.paymentStatus);
+
+      const response = await axios.get(`${baseurl}admin/sales-report/download-excel?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `sales-report-${Date.now()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      showToast('Excel downloaded successfully', 'success');
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      showToast('Failed to download Excel', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const applyFilters = () => {
+    fetchReport();
     showToast('Filters applied', 'success');
   };
 
@@ -119,6 +165,8 @@ export default function SalesReport() {
     );
   }
 
+  if (!reportData) return null;
+
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <style>{`
@@ -127,9 +175,6 @@ export default function SalesReport() {
           to { transform: translateX(0); opacity: 1; }
         }
         .animate-slide-in { animation: slide-in 0.3s ease-out; }
-        
-        /* Ensure proper stacking context */
-        body { position: relative; }
       `}</style>
 
       {toasts.map(toast => (
@@ -146,7 +191,7 @@ export default function SalesReport() {
             <TrendingUp className="w-8 h-8 text-blue-600" />
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4 flex-wrap">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border ${showFilters ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700'}`}
@@ -174,7 +219,7 @@ export default function SalesReport() {
 
           {showFilters && (
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
                   <input
@@ -258,7 +303,7 @@ export default function SalesReport() {
       </header>
 
       <main className="p-4 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={ShoppingCart}
             title="Total Orders"

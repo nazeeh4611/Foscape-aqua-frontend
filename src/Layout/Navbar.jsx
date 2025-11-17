@@ -297,100 +297,61 @@ const getHeadingColor = () => {
 </nav>
 
 
-            <div className="flex items-center space-x-4">
-              {/* Cart and Wishlist Icons */}
-              {isLogged && (
-                <>
-                  <button
-                    onClick={() => setIsWishlistOpen(true)}
-                    className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
-                  >
-                    <Heart className="w-6 h-6 text-teal-600" />
-                    {wishlistCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {wishlistCount}
-                      </span>
-                    )}
-                  </button>
+          <div className="flex items-center space-x-4">
+            {/* Cart and Wishlist Icons */}
+            {isLogged && (
+              <>
+                <button 
+                  onClick={() => setIsWishlistOpen(true)} 
+                  className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
+                >
+                  <Heart className="w-6 h-6 text-teal-600" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
 
-                  <button
-                    onClick={() => setIsCartOpen(true)}
-                    className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
-                  >
-                    <ShoppingCart className="w-6 h-6 text-teal-600" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                  </button>
-                </>
-              )}
+                <button 
+                  onClick={() => setIsCartOpen(true)} 
+                  className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
+                >
+                  <ShoppingCart className="w-6 h-6 text-teal-600" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
 
-              <div className="hidden md:block">
-                {!isLogged ? (
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <span>Sign In</span>
-                  </button>
-                ) : (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs font-bold text-teal-600">
-                        {user?.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="hidden lg:block">{user?.name}</span>
-                    </button>
-
-                    {showProfileDropdown && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
-                        <div className="px-4 py-3 border-b border-teal-100">
-                          <p className="text-sm font-semibold text-gray-700">
-                            {user?.name}
-                          </p>
-                          <p className="text-xs text-teal-600">{user?.email}</p>
-                        </div>
-                        <Link
-                          to="/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
-                          onClick={() => setShowProfileDropdown(false)}
-                        >
-                          Profile
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {isLogged && (
-                <div className="md:hidden relative">
+            {/* Desktop Sign In Button - hidden on mobile */}
+            <div className="hidden md:block">
+              {!isLogged ? (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <span>Sign In</span>
+                </button>
+              ) : (
+                <div className="relative">
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="inline-flex items-center justify-center p-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm font-bold text-teal-600">
+                    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs font-bold text-teal-600">
                       {user?.name?.charAt(0).toUpperCase()}
                     </div>
+                    <span className="hidden lg:block">{user?.name}</span>
                   </button>
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
                       <div className="px-4 py-3 border-b border-teal-100">
-                        <p className="text-sm font-semibold text-gray-700">
-                          {user?.name}
-                        </p>
+                        <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
                         <p className="text-xs text-teal-600">{user?.email}</p>
                       </div>
                       <Link
@@ -410,19 +371,67 @@ const getHeadingColor = () => {
                   )}
                 </div>
               )}
-
-              <button
-                className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6 text-teal-600" />
-                ) : (
-                  <Menu className="w-6 h-6 text-teal-600" />
-                )}
-              </button>
             </div>
+
+            {/* Mobile Sign In Button - visible only on mobile when not logged in */}
+            {!isLogged && (
+              <div className="md:hidden">
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <span>Sign In</span>
+                </button>
+              </div>
+            )}
+
+            {isLogged && (
+              <div className="md:hidden relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="inline-flex items-center justify-center p-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm font-bold text-teal-600">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
+                    <div className="px-4 py-3 border-b border-teal-100">
+                      <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
+                      <p className="text-xs text-teal-600">{user?.email}</p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
+                      onClick={() => setShowProfileDropdown(false)}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? (
+                <X className="w-6 h-6 text-teal-600" />
+              ) : (
+                <Menu className="w-6 h-6 text-teal-600" />
+              )}
+            </button>
+          </div>
           </div>
 
           <div
@@ -475,44 +484,44 @@ const getHeadingColor = () => {
                 Contact
               </Link>
 
-              <div className="pt-4 border-t border-teal-100">
-                {!isLogged ? (
-                  <button
-                    onClick={() => {
-                      setShowAuthModal(true);
-                      handleMenuItemClick();
-                    }}
-                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <span>Sign In</span>
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-100">
-                      <p className="text-sm font-semibold text-gray-700">
-                        {user?.name}
-                      </p>
-                      <p className="text-xs text-teal-600">{user?.email}</p>
-                    </div>
-                    <Link
-                      to="/profile"
-                      className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                      onClick={handleMenuItemClick}
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        handleMenuItemClick();
-                      }}
-                      className="block w-full text-left py-2 text-lg font-medium text-gray-700 hover:text-red-600 transition-colors duration-300"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
+                      <div className="pt-4 border-t border-teal-100">
+          {!isLogged ? (
+            <button
+              onClick={() => {
+                setShowAuthModal(true);
+                handleMenuItemClick();
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              <span>Sign In</span>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-100">
+                <p className="text-sm font-semibold text-gray-700">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-teal-600">{user?.email}</p>
               </div>
+              <Link
+                to="/profile"
+                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
+                onClick={handleMenuItemClick}
+              >
+                Profile
+              </Link>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  handleMenuItemClick();
+                }}
+                className="block w-full text-left py-2 text-lg font-medium text-gray-700 hover:text-red-600 transition-colors duration-300"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+                    </div>
             </nav>
           </div>
         </div>

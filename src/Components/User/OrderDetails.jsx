@@ -59,32 +59,62 @@ export const OrderDetailsPage = () => {
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: invoiceRef.current.scrollWidth,
+        windowHeight: invoiceRef.current.scrollHeight,
+        foreignObjectRendering: false,
+        imageTimeout: 15000,
+        removeContainer: true,
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
       const imgWidth = 190;
       const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
-
       let position = 10;
 
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST');
       heightLeft -= pageHeight;
 
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight, undefined, 'FAST');
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`invoice-${order.orderNumber}.pdf`);
+      if (isSafari) {
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `invoice-${order.orderNumber}.pdf`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      } else {
+        pdf.save(`invoice-${order.orderNumber}.pdf`);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
+      alert('Failed to generate invoice. Please try again or use a different browser.');
     }
   };
 
@@ -361,12 +391,13 @@ export const OrderDetailsPage = () => {
 
         {order.orderStatus === 'Delivered' && (
           <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-            <div ref={invoiceRef} className="bg-white p-8 max-w-4xl" style={{ fontFamily: 'Arial, sans-serif', color: '#000000' }}>
+            <div ref={invoiceRef} className="bg-white p-8 max-w-4xl" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, Arial, sans-serif', color: '#000000', WebkitFontSmoothing: 'antialiased' }}>
               <div className="flex justify-between items-center mb-8 border-b-2 border-gray-300 pb-6">
                 <div>
                   <img 
                     src="https://www.thefoscape.com/assets/logo-DkyHVLbt.png" 
                     alt="Foscape Logo" 
+                    crossOrigin="anonymous"
                     className="h-16"
                     style={{ height: '64px' }}
                   />

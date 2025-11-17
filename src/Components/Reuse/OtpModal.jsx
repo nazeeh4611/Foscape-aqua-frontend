@@ -11,6 +11,14 @@ const OtpModal = ({ show, onClose, email, onVerifySuccess }) => {
   const [canResend, setCanResend] = useState(false);
 
   useEffect(() => {
+    if (show) {
+      setTimeLeft(300);
+      setCanResend(false);
+      setOtp("");
+    }
+  }, [show]);
+
+  useEffect(() => {
     if (!show) return;
 
     const timer = setInterval(() => {
@@ -38,18 +46,19 @@ const OtpModal = ({ show, onClose, email, onVerifySuccess }) => {
     setIsSubmitting(true);
     try {
       const res = await axios.post(
-        `${baseurl}User/verify-otp`,
-        { email, otp },
-        { withCredentials: true }
+        `${baseurl}user/verify-otp`,
+        { email, otp }
       );
 
       if (res.data.success) {
         toast.success("Email verified successfully!");
         localStorage.setItem("token", res.data.token);
+        if (res.data.user) {
+          localStorage.setItem("userData", JSON.stringify(res.data.user));
+        }
         setOtp("");
         onClose();
         
-        // Call the callback to refresh auth state in Navbar
         if (onVerifySuccess) {
           onVerifySuccess();
         }
@@ -65,9 +74,8 @@ const OtpModal = ({ show, onClose, email, onVerifySuccess }) => {
     setIsSubmitting(true);
     try {
       await axios.post(
-        `${baseurl}User/resend-otp`,
-        { email },
-        { withCredentials: true }
+        `${baseurl}user/resend-otp`,
+        { email }
       );
       toast.success("OTP resent successfully");
       setTimeLeft(300);
@@ -117,7 +125,7 @@ const OtpModal = ({ show, onClose, email, onVerifySuccess }) => {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               maxLength="6"
-              className="w-full px-4 py-3 rounded-xl text-center text-2xl font-bold border-0 focus:outline-none focus:ring-2 tracking-widest"
+              className="w-full px-4 py-3 rounded-xl text-center text-2xl font-bold border-0 focus:outline-none focus:ring-2 tracking-widest placeholder-white/50"
               style={{ background: "rgba(255, 255, 255, 0.15)", color: "#fff" }}
               placeholder="000000"
               required

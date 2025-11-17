@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Package,
@@ -8,12 +8,15 @@ import {
   CreditCard,
   Calendar,
   Clock,
+  Download,
 } from 'lucide-react';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
 import { useAuth } from '../../Context.js/Auth';
 import axios from 'axios';
 import { baseurl } from '../../Base/Base';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export const OrderDetailsPage = () => {
   const navigate = useNavigate();
@@ -21,6 +24,7 @@ export const OrderDetailsPage = () => {
   const { isLogged } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const invoiceRef = useRef();
 
   useEffect(() => {
     if (!isLogged) {
@@ -47,6 +51,42 @@ export const OrderDetailsPage = () => {
       fetchOrder();
     }
   }, [orderId]);
+
+  const downloadInvoice = async () => {
+    if (!invoiceRef.current) return;
+
+    try {
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 190;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 10;
+
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`invoice-${order.orderNumber}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -97,9 +137,21 @@ export const OrderDetailsPage = () => {
               <span className="text-sm font-medium">Back to Orders</span>
             </button>
 
-            <div className="flex items-center gap-3 mb-3">
-              <Package className="w-8 h-8" />
-              <h1 className="text-3xl sm:text-4xl font-bold">Order Details</h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 mb-3">
+                <Package className="w-8 h-8" />
+                <h1 className="text-3xl sm:text-4xl font-bold">Order Details</h1>
+              </div>
+              
+              {order.orderStatus === 'Delivered' && (
+                <button
+                  onClick={downloadInvoice}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-[#144E8C] rounded-xl font-semibold hover:shadow-lg transition-all"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Invoice
+                </button>
+              )}
             </div>
 
             <div className="flex items-center text-sm text-[#CFEAE3] gap-1">
@@ -306,6 +358,105 @@ export const OrderDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {order.orderStatus === 'Delivered' && (
+          <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+            <div ref={invoiceRef} className="bg-white p-8 max-w-4xl" style={{ fontFamily: 'Arial, sans-serif', color: '#000000' }}>
+              <div className="flex justify-between items-center mb-8 border-b-2 border-gray-300 pb-6">
+                <div>
+                  <img 
+                    src="https://www.thefoscape.com/assets/logo-DkyHVLbt.png" 
+                    alt="Foscape Logo" 
+                    className="h-16"
+                    style={{ height: '64px' }}
+                  />
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000000', margin: 0 }}>INVOICE</h1>
+                  <p style={{ color: '#666666', margin: '4px 0 0 0' }}>Order #{order.orderNumber}</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#000000', marginBottom: '8px' }}>Bill To:</h3>
+                  <p style={{ fontWeight: '500', margin: '4px 0' }}>{order.shippingAddress.fullName}</p>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>{order.shippingAddress.phone}</p>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>{order.shippingAddress.addressLine1}</p>
+                  {order.shippingAddress.addressLine2 && (
+                    <p style={{ color: '#666666', margin: '4px 0' }}>{order.shippingAddress.addressLine2}</p>
+                  )}
+                  <p style={{ color: '#666666', margin: '4px 0' }}>
+                    {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                  </p>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>{order.shippingAddress.country}</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#000000', marginBottom: '8px' }}>Invoice Details</h3>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>
+                    <strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                  </p>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>
+                    <strong>Invoice Date:</strong> {new Date().toLocaleDateString('en-IN')}
+                  </p>
+                  <p style={{ color: '#666666', margin: '4px 0' }}>
+                    <strong>Status:</strong> {order.orderStatus}
+                  </p>
+                  {order.paymentDetails?.razorpayPaymentId && (
+                    <p style={{ color: '#666666', margin: '4px 0' }}>
+                      <strong>Transaction ID:</strong> {order.paymentDetails.razorpayPaymentId}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <table style={{ width: '100%', marginBottom: '32px', borderCollapse: 'collapse', border: '1px solid #cccccc' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f5f5f5' }}>
+                    <th style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'left', fontWeight: '600' }}>Item</th>
+                    <th style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'center', fontWeight: '600' }}>Quantity</th>
+                    <th style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'right', fontWeight: '600' }}>Price</th>
+                    <th style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'right', fontWeight: '600' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.items.map((item, index) => (
+                    <tr key={index}>
+                      <td style={{ border: '1px solid #cccccc', padding: '12px 16px' }}>{item.name}</td>
+                      <td style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'center' }}>{item.quantity}</td>
+                      <td style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'right' }}>₹{item.price}</td>
+                      <td style={{ border: '1px solid #cccccc', padding: '12px 16px', textAlign: 'right' }}>₹{item.price * item.quantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ width: '256px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e5e5e5' }}>
+                    <span style={{ fontWeight: '500' }}>Subtotal:</span>
+                    <span style={{ fontWeight: '500' }}>₹{order.totalAmount}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e5e5e5' }}>
+                    <span style={{ fontWeight: '500' }}>Delivery:</span>
+                    <span style={{ fontWeight: '500', color: '#16a34a' }}>FREE</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e5e5e5' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold' }}>Total:</span>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold' }}>₹{order.totalAmount}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #cccccc', textAlign: 'center', color: '#666666' }}>
+                <p style={{ fontWeight: '600', margin: '4px 0' }}>FOSCAPE</p>
+                <p style={{ margin: '4px 0' }}>4/46B, Juma Masjid, PV Building, V Hamza Road, Near Naduvilangadi, Tirur, Kerala 676107</p>
+                <p style={{ margin: '4px 0' }}>Phone: +91-854 748 3891 | Email: info@thefoscape.com</p>
+                <p style={{ marginTop: '16px', fontSize: '14px' }}>Thank you for your business!</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </>

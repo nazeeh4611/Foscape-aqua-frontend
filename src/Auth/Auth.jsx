@@ -18,8 +18,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const res = await axios.get(`${baseurl}user/get-user`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data.success) {
@@ -36,10 +35,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsLogged(false);
-    localStorage.removeItem("token");
+  const login = (userData, token) => {
+    localStorage.setItem("token", token);
+    setUser(userData);
+    setIsLogged(true);
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post(`${baseurl}user/logout`);
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      setUser(null);
+      setIsLogged(false);
+      localStorage.removeItem("token");
+    }
   };
 
   useEffect(() => {
@@ -47,7 +58,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLogged, loading, checkAuthStatus, logout, setUser, setIsLogged }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLogged, 
+      loading, 
+      checkAuthStatus, 
+      login, 
+      logout, 
+      setUser, 
+      setIsLogged 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,10 +1,11 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { baseurl } from "../../Base/Base";
-import { toast } from 'react-toastify';
 import { GoogleLogin } from '@react-oauth/google';
 import { X, ArrowRight, Mail, Lock, User, Phone, KeyRound } from 'lucide-react';
 import { useToast } from "../../Context.js/ToastContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 
 const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,7 +21,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [forgotEmail, setForgotEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const  showToast = useToast();
+  const showToast = useToast();
 
   if (!show) return null;
 
@@ -68,29 +69,41 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await axios.post(`${baseurl}user/login`, { email, password }, {
-        withCredentials: true
-      });
+      const res = await axios.post(`${baseurl}user/login`, { email, password });
+      
+      console.log("Login response:", res.data);
       
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
+        console.log("=== LOCALSTORAGE VERIFICATION ===");
+console.log("All localStorage keys:", Object.keys(localStorage));
+console.log("Token length:", localStorage.getItem("token")?.length);
+console.log("UserData:", localStorage.getItem("userData"));
+console.log("======================");
+        console.log("Token stored in localStorage");
       }
       
       if (res.data.user) {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
+        console.log("User data stored in localStorage");
       }
       
-      // Show success toast
+      // Verify 
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("userData");
+      console.log("Stored token:", storedToken);
+      console.log("Stored user:", storedUser);
+      
       showToast.success("Welcome back! Login successful.");
       resetForm();
       
-      // Call onLoginSuccess to update navbar and context
       if (onLoginSuccess) {
         await onLoginSuccess();
       }
       
       onClose();
     } catch (error) {
+      console.error("Login error:", error);
       showToast.error(error.response?.data?.message || "Login failed");
     } finally {
       setIsSubmitting(false);
@@ -100,30 +113,35 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const res = await axios.post(
-        `${baseurl}User/google-auth`,
-        { credential: credentialResponse.credential },
-        { withCredentials: true }
+        `${baseurl}user/google-auth`,
+        { credential: credentialResponse.credential }
       );
+      
+      console.log("Google auth response:", res.data);
       
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
+        console.log("Google token stored:", res.data.token);
       }
       
       if (res.data.user) {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
       }
       
-      // Show success toast for Google login
+      // Verify storage
+      const storedToken = localStorage.getItem("token");
+      console.log("Verified stored token:", storedToken);
+      
       showToast.success("Login successful!");
       resetForm();
       
-      // Call onLoginSuccess to update navbar and context
       if (onLoginSuccess) {
         await onLoginSuccess();
       }
       
       onClose();
     } catch (error) {
+      console.error("Google auth error:", error);
       showToast.error(error.response?.data?.message || "Authentication failed");
     }
   };
@@ -154,6 +172,18 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
     onClose();
   };
 
+  const switchToLogin = () => {
+    setIsLogin(true);
+    resetForm();
+    setShowForgotPassword(false);
+  };
+
+  const switchToRegister = () => {
+    setIsLogin(false);
+    resetForm();
+    setShowForgotPassword(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(20, 78, 140, 0.15)', backdropFilter: 'blur(8px)' }}>
       <div className="relative w-full max-w-md">
@@ -172,7 +202,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
             <div className="p-8">
               <div className="flex gap-1 mb-8 p-1.5 rounded-2xl" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>
                 <button
-                  onClick={() => setIsLogin(true)}
+                  onClick={switchToLogin}
                   className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
                   style={isLogin ? 
                     { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
@@ -182,7 +212,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   Login
                 </button>
                 <button
-                  onClick={() => setIsLogin(false)}
+                  onClick={switchToRegister}
                   className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
                   style={!isLogin ? 
                     { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
@@ -201,13 +231,11 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
-                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff', focusRingColor: 'rgba(255, 255, 255, 0.3)' }}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all placeholder-white/50"
+                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                       placeholder="Email"
-                      placeholderClassName="text-white/50"
                       required
                     />
-                    <style>{`input::placeholder { color: rgba(255, 255, 255, 0.6); }`}</style>
                   </div>
                   
                   <div className="relative">
@@ -216,7 +244,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all placeholder-white/50"
                       style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                       placeholder="Password"
                       required
@@ -251,7 +279,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   <div className="bg-white rounded-xl p-1">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => showToast.error("Google auth failed")}
+                      onError={() => showToast.error("Google authentication failed")}
                       theme="light"
                       size="large"
                       width="100%"
@@ -268,7 +296,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                         style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                         placeholder="Name"
                         required
@@ -281,9 +309,10 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                         style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                         placeholder="Phone"
+                        required
                       />
                     </div>
                   </div>
@@ -294,7 +323,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                       type="email"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                       style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                       placeholder="Email"
                       required
@@ -308,7 +337,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                         type="password"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                         style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                         placeholder="Password"
                         required
@@ -321,7 +350,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                         style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                         placeholder="Confirm"
                         required
@@ -348,7 +377,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   <div className="bg-white rounded-xl p-1">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => showToast.error("Google auth failed")}
+                      onError={() => showToast.error("Google authentication failed")}
                       theme="light"
                       size="large"
                       width="100%"
@@ -366,7 +395,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
         ) : (
           <div className="relative rounded-3xl overflow-hidden shadow-2xl p-8" style={{ background: 'linear-gradient(135deg, #144E8C 0%, #78C7A2 100%)' }}>
             <button 
-              onClick={() => setShowForgotPassword(false)}
+              onClick={switchToLogin}
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all hover:rotate-90"
               style={{ background: 'rgba(255, 255, 255, 0.2)' }}
             >
@@ -390,7 +419,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
                   style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
                   placeholder="Enter your email"
                   required
@@ -409,7 +438,7 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
 
               <button
                 type="button"
-                onClick={() => setShowForgotPassword(false)}
+                onClick={switchToLogin}
                 className="w-full py-2.5 text-sm font-medium transition-all rounded-xl text-white opacity-80 hover:opacity-100"
                 style={{ background: 'rgba(255, 255, 255, 0.1)' }}
               >

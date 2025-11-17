@@ -100,7 +100,7 @@ const getHeadingColor = () => {
   };
   const handleLogout = async () => {
     try {
-      await axios.post(`${baseurl}user/logout`, {}, { withCredentials: true });
+      await axios.post(`${baseurl}user/logout`);
       
       showToast.success("Logged out successfully!");
       
@@ -203,6 +203,22 @@ const getHeadingColor = () => {
       } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
     ></span>
   </Link>
+  <Link to="/categories" className="relative group py-2">
+    <span
+      className={`font-medium ${
+        location.pathname.startsWith("/categories")
+          ? "text-teal-600"
+          : "text-gray-700"
+      } group-hover:text-teal-600 transition-colors duration-300`}
+    >
+      Shop
+    </span>
+    <span
+      className={`absolute left-0 bottom-0 ${
+        location.pathname.startsWith("/categories") ? "w-full" : "w-0"
+      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
+    ></span>
+  </Link>
   <Link to="/gallery" className="relative group py-2">
     <span
       className={`font-medium ${
@@ -241,22 +257,7 @@ const getHeadingColor = () => {
   </Link>
 
   {/* Shop */}
-  <Link to="/categories" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname.startsWith("/categories")
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      Shop
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname.startsWith("/categories") ? "w-full" : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
+
 
   {/* About */}
   <Link to="/about" className="relative group py-2">
@@ -438,19 +439,27 @@ const getHeadingColor = () => {
                 Home
               </Link>
               <Link
+                to="/categories"
+                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
+                onClick={handleMenuItemClick}
+              >
+                Shop
+              </Link>
+              <Link
+                to="/gallery"
+                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
+                onClick={handleMenuItemClick}
+              >
+                Gallery
+              </Link>
+              <Link
                 to="/service"
                 className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
                 onClick={handleMenuItemClick}
               >
                 Service
               </Link>
-              <Link
-                to="/shop"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Shop
-              </Link>
+             
               <Link
                 to="/about"
                 className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"

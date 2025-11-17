@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Fish, Package } from 'lucide-react';
 import axios from 'axios';
 import { baseurl } from '../Base/Base';
+import {  Link } from "react-router-dom";
 
 const CategoryComponent = () => {
   const [activeCategory, setActiveCategory] = useState('');
@@ -43,7 +44,7 @@ const CategoryComponent = () => {
   const activeData = categories.find(cat => cat._id === activeCategory);
 
   return (
-    <div className="w-full mx-auto px-4 py-8 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="w-full mx-auto px-4 py-8 bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -138,10 +139,18 @@ const CategoryComponent = () => {
         
         {/* Bottom CTA */}
         <div className="text-center">
-          <button className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-            <Fish className="w-5 h-5" />
-            Explore All Products
-          </button>
+        <Link to="/categories">
+  <button
+    className="inline-flex items-center gap-2 px-8 py-3 
+               bg-gradient-to-r from-slate-700 to-slate-900 
+               text-white rounded-xl font-semibold 
+               hover:shadow-lg transition-all duration-300"
+  >
+    <Fish className="w-5 h-5" />
+    Explore All Products
+  </button>
+</Link>
+
         </div>
       </div>
     </div>

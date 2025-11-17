@@ -16,6 +16,7 @@ import { CheckoutPage } from "../Components/User/CheckoutPage";
 import { ProfilePage } from "../Components/User/ProfilePage";
 import Gallery from "../Components/User/GalleryPage";
 import { UserPrivateRoute } from "./Private";
+import { PrivacyPolicy, RefundPolicy, ShippingPolicy, TermsConditions } from "../Components/Policy/Privacy";
 
 
 function UserRoute() {
@@ -26,6 +27,10 @@ function UserRoute() {
       <Route path="/:categoryId/sub-category" element={<SubCategoriesPage />} />
       <Route path="/products/subcategory/:subCategoryId" element={<ProductsPage />} />
       <Route path="/product/:id" element={<ProductDetailsPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/shipping-policy" element={<ShippingPolicy />} />
 
       <Route
         path="/cart"

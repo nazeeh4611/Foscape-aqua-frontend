@@ -165,10 +165,7 @@ const ServicesPage = () => {
                         ))}
                       </div>
 
-                      <button className="w-full mt-6 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 group-hover:bg-gradient-to-r group-hover:from-[#144E8C] group-hover:to-[#78CDD1] text-slate-700 group-hover:text-white rounded-xl font-medium transition-all duration-300">
-                        <span>Learn More</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </button>
+                     
                     </div>
                   </div>
                 );

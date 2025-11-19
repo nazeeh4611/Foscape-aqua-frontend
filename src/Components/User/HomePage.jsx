@@ -637,7 +637,7 @@ export default function HomePage() {
     <WhyChooseUs />
   </section>
 
-  <section className="py-20 bg-gradient-to-br from-[#144E8C] to-[#78CDD1]" data-aos="fade-up">
+  <section className="py-20 b" data-aos="fade-up">
     <OurProjects />
   </section>
 

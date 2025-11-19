@@ -12,6 +12,7 @@ import {
   Settings,
   BarChart4,
   Home,
+  Layers,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -202,6 +203,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <span className="ml-3 font-medium">Sales</span>
               </Link>
             </li>
+            <li>
+  <Link
+    to="/admin/works"
+    onClick={handleLinkClick}
+    className={`flex items-center p-3 rounded-xl transition ${
+      isActive("/admin/works")
+        ? "bg-white text-[#144E8C] shadow-md"
+        : "text-white/90 hover:bg-white/20"
+    }`}
+  >
+    <Layers className="w-5 h-5" />
+    <span className="ml-3 font-medium">Works</span>
+  </Link>
+</li>
 
             <li>
               <Link

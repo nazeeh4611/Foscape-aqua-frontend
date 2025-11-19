@@ -36,7 +36,9 @@ const FloatingIcons = () => {
   const finalNumber = cleanedNumber.startsWith("91")
   ? cleanedNumber
   : `91${cleanedNumber}`;
-
+  const message = `Hello Foscape Team,
+  I would like to know more about your services. Please get back to me when you're available.`;
+  
 
   return (
     <div className="fixed bottom-20 right-6 flex flex-col items-center gap-4 z-50">

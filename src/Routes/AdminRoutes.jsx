@@ -71,7 +71,7 @@ export default function AdminRoute() {
         <Route path="sales" element={<SalesReport />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="settings" element={<AdminSettings />} />
-        <Route path="projects" element={<PortfolioAdmin />} />
+        <Route path="works" element={<PortfolioAdmin />} />
       </Route>
     </Routes>
   );

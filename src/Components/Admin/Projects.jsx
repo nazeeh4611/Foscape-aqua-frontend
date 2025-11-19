@@ -536,7 +536,7 @@ export default function PortfolioAdmin() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Portfolio Projects</h2>
+                <h2 className="text-xl font-bold text-gray-900">Works & Designs</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{portfolioItems.length} total projects</p>
               </div>
               <button

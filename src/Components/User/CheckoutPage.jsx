@@ -36,7 +36,7 @@ export const CheckoutPage = () => {
     country: 'India',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [paymentMethod, setPaymentMethod] = useState("Razorpay");
   const [errors, setErrors] = useState({});
   const { fetchCart } = useCartWishlist();
 
@@ -251,8 +251,18 @@ export const CheckoutPage = () => {
       <Navbar />
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
         <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-12">
-          <div className="max-w-7xl mx-auto px-6 md:px-8">
-            <button
+        <div
+    className="absolute inset-0 opacity-10"
+    style={{
+      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+      backgroundSize: '1000px 1000px',
+      backgroundPosition: 'left center',
+      backgroundRepeat: 'repeat-y',
+      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+    }}
+  />
+  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
               onClick={() => navigate('/cart')}
               className="flex items-center gap-2 mb-4 text-[#CFEAE3] hover:text-white transition-all"
             >
@@ -500,34 +510,35 @@ export const CheckoutPage = () => {
                   </div>
   
                   <div className="space-y-4 mb-6">
-                    <div
-                      onClick={() => setPaymentMethod('COD')}
-                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                        paymentMethod === 'COD'
-                          ? 'border-[#144E8C] bg-blue-50'
-                          : 'border-slate-300 hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                              paymentMethod === 'COD'
-                                ? 'border-[#144E8C]'
-                                : 'border-slate-300'
-                            }`}
-                          >
-                            {paymentMethod === 'COD' && (
-                              <div className="w-3 h-3 rounded-full bg-[#144E8C]"></div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-800">Cash on Delivery</p>
-                            <p className="text-sm text-slate-600">Pay when you receive</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {/* <div
+  onClick={() => setPaymentMethod('COD')}
+  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+    paymentMethod === 'COD'
+      ? 'border-[#144E8C] bg-blue-50'
+      : 'border-slate-300 hover:border-slate-400'
+  }`}
+>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div
+        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+          paymentMethod === 'COD'
+            ? 'border-[#144E8C]'
+            : 'border-slate-300'
+        }`}
+      >
+        {paymentMethod === 'COD' && (
+          <div className="w-3 h-3 rounded-full bg-[#144E8C]"></div>
+        )}
+      </div>
+      <div>
+        <p className="font-semibold text-slate-800">Cash on Delivery</p>
+        <p className="text-sm text-slate-600">Pay when you receive</p>
+      </div>
+    </div>
+  </div>
+</div> */}
+
   
                     <div
                       onClick={() => setPaymentMethod('Razorpay')}

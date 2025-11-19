@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Lock, Eye, EyeOff, Save, KeyRound, CheckCircle, AlertCircle, X, User } from 'lucide-react';
 import axios from 'axios';
 import { baseurl } from '../../Base/Base';
+import { Phone } from "lucide-react";
 
 const Toast = ({ message, type, onClose }) => {
   const icons = {
@@ -80,6 +81,22 @@ export default function AdminSettings() {
     fetchAdminDetails();
   }, []);
 
+  const updatePhoneNumber = async () => {
+    try {
+      const response = await axios.put(
+        `${baseurl}admin/update-phone`,
+        { phone: adminData.phone },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+  
+      showToast("Phone number updated successfully!", "success");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Failed to update phone", "error");
+    }
+  };
+  
   // ========================== FORM VALIDATION ==========================
   const validateForm = () => {
     const newErrors = {};
@@ -189,37 +206,78 @@ export default function AdminSettings() {
         <div className="overflow-y-auto p-4">
           <div className="max-w-2xl mx-auto">
 
-            {/* ================= ADMIN DETAILS CARD ================= */}
-            {adminData && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">Admin Details</h3>
-                    <p className="text-sm text-gray-600">Your account information</p>
-                  </div>
+          {/* ================= ADMIN DETAILS CARD ================= */}
+          {adminData && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
                 </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    <span className="font-semibold text-gray-700">Name:</span>{' '}
-                    <span className="text-gray-900">{adminData.name}</span>
-                  </p>
-
-                  <p className="text-sm">
-                    <span className="font-semibold text-gray-700">Email:</span>{' '}
-                    <span className="text-gray-900">{adminData.email}</span>
-                  </p>
-
-                  <p className="text-sm">
-                    <span className="font-semibold text-gray-700">Role:</span>{' '}
-                    <span className="text-gray-900 capitalize">{adminData.role}</span>
-                  </p>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Admin Details</h3>
+                  <p className="text-sm text-gray-600">Your account information</p>
                 </div>
               </div>
-            )}
+
+              <div className="space-y-3">
+                <p className="text-sm">
+                  <span className="font-semibold text-gray-700">Name:</span>{" "}
+                  <span className="text-gray-900">{adminData.name}</span>
+                </p>
+
+                <p className="text-sm">
+                  <span className="font-semibold text-gray-700">Email:</span>{" "}
+                  <span className="text-gray-900">{adminData.email}</span>
+                </p>
+
+                <p className="text-sm">
+                  <span className="font-semibold text-gray-700">Phone:</span>{" "}
+                  <span className="text-gray-900">{adminData.phone || "Not added"}</span>
+                </p>
+
+                <p className="text-sm">
+                  <span className="font-semibold text-gray-700">Role:</span>{" "}
+                  <span className="text-gray-900 capitalize">{adminData.role}</span>
+                </p>
+              </div>
+            </div>
+          )}
+          {/* ================= UPDATE PHONE NUMBER ================= */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                        <Phone className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Update Phone Number</h3>
+                        <p className="text-sm text-gray-600">Change your contact number</p>
+                      </div>
+                    </div>
+
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={adminData?.phone || ""}
+                      onChange={(e) =>
+                        setAdminData((prev) => ({ ...prev, phone: e.target.value }))
+                      }
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Enter phone number"
+                    />
+
+                    <button
+                      onClick={updatePhoneNumber}
+                      className="mt-5 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md"
+                    >
+                      Update Phone
+                    </button>
+                  </div>
+
+
 
             {/* ================= CHANGE PASSWORD ================= */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -335,6 +393,8 @@ export default function AdminSettings() {
                     disabled={isSubmitting}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition font-bold text-base shadow-lg disabled:opacity-50"
                   >
+         
+
                     <Save className="w-5 h-5" />
                     {isSubmitting ? 'Updating Password...' : 'Update Password'}
                   </button>

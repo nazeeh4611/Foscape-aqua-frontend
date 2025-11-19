@@ -8,6 +8,7 @@ import axios from "axios";
 import { baseurl } from '../../Base/Base';
 import 'aos/dist/aos.css';
 import AOS from 'aos';
+import OurProjects from '../../Layout/Projects';
 
 const CategoryComponent = () => {
   const [activeCategory, setActiveCategory] = useState('');
@@ -290,79 +291,7 @@ const WhyChooseUs = () => {
 };
 
 
-const HowItWorks = () => {
-  useEffect(() => {
-    AOS.init({ duration: 900, once: true });
-  }, []);
 
-  const steps = [
-    { number: "01", title: "Browse & Select", description: "Explore our wide range of products and choose what you need" },
-    { number: "02", title: "Add to Cart", description: "Add your selected items to cart and proceed to checkout" },
-    { number: "03", title: "Secure Payment", description: "Complete your purchase with our secure payment options" },
-    { number: "04", title: "Fast Delivery", description: "Receive your order safely with our specialized shipping" }
-  ];
-
-  return (
-    <div className="w-full py-16 bg-gradient-to-br from-[#144E8C] to-[#78CDD1]">
-      <div className="max-w-7xl mx-auto px-4">
-        
-        <div className="text-center mb-12" data-aos="fade-down">
-          <h2 className="text-4xl font-bold text-white mb-4">How It Works</h2>
-          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Simple steps to get your aquatic products delivered
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className="relative"
-              data-aos="fade-up"
-              data-aos-delay={index * 150}
-            >
-              <div
-                className="
-                  bg-white/20 backdrop-blur-md 
-                  rounded-2xl p-6 
-                  border border-white/20 
-                  shadow-lg shadow-black/10
-                  transition-all duration-300
-                  hover:bg-white/30 
-                  hover:shadow-xl 
-                  hover:-translate-y-2
-                "
-              >
-                <div className="text-6xl font-bold text-white/30 mb-4">
-                  {step.number}
-                </div>
-
-                <h3 className="text-xl font-bold text-white mb-3">
-                  {step.title}
-                </h3>
-
-                <p className="text-slate-200">{step.description}</p>
-              </div>
-
-              {index < steps.length - 1 && (
-                <div
-                  className="
-                    hidden lg:block absolute top-1/2 -right-3 
-                    transform -translate-y-1/2
-                    transition-all duration-300
-                    group-hover:translate-x-2
-                  "
-                >
-                  <ArrowRight className="w-6 h-6 text-white/50" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
  ;
 
@@ -686,20 +615,46 @@ const FeaturedProducts = () => {
     </div>
   );
 };
-
 export default function HomePage() {
+  useEffect(() => {
+    AOS.init({ duration: 900, once: true });
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar/>
-      <Hero/>
-      <CategoryComponent />
-      <Services />
-      <WhyChooseUs />
-      <HowItWorks />
-      <FAQ />
-      <Testimonials />
-      <FeaturedProducts />
-      <Footer/>
-    </div>
+<div className="bg-white">
+  <Navbar />
+  <Hero />
+
+  <section className="py-20" data-aos="fade-up">
+    <CategoryComponent />
+  </section>
+
+  <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+    <Services />
+  </section>
+
+  <section className="py-20 bg-white" data-aos="fade-up">
+    <WhyChooseUs />
+  </section>
+
+  <section className="py-20 bg-gradient-to-br from-[#144E8C] to-[#78CDD1]" data-aos="fade-up">
+    <OurProjects />
+  </section>
+
+  <section className="py-20 bg-white" data-aos="fade-up">
+    <FAQ />
+  </section>
+
+  <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+    <Testimonials />
+  </section>
+
+  <section className="py-20 bg-white" data-aos="fade-up">
+    <FeaturedProducts />
+  </section>
+
+  <Footer />
+</div>
+
   );
 }

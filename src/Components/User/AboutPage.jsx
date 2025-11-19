@@ -1,7 +1,8 @@
 import React from 'react';
-import { Award, Users, Target, Sparkles, TrendingUp, Heart } from 'lucide-react';
+import { Award, Users, Target, Sparkles, TrendingUp, Heart, ArrowLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
+import { useNavigate } from 'react-router-dom';
 
 const AboutPage = () => {
   const stats = [
@@ -10,6 +11,7 @@ const AboutPage = () => {
     { icon: Target, value: '200+', label: 'Projects Completed' },
     { icon: Sparkles, value: '100%', label: 'Quality Assurance' }
   ];
+  const navigate = useNavigate()
 
   const values = [
     {
@@ -39,14 +41,56 @@ const AboutPage = () => {
       <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-5xl font-bold mb-4">About Foscape</h1>
-            <p className="text-[#CFEAE3] text-lg max-w-3xl">
-              World-Class Aquatic Care Services - Specializing in aquariums, pools, and water gardens across South India
-            </p>
-          </div>
+      <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+      <div
+    className="absolute inset-0 opacity-10"
+    style={{
+      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+      backgroundSize: '1000px 1000px',
+      backgroundPosition: 'left center',
+      backgroundRepeat: 'repeat-y',
+      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+    }}
+  />
+  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+    {/* Back Button */}
+    {/* <button
+      onClick={() => navigate('/')}
+      className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
+    >
+      <ArrowLeft className="w-5 h-5" />
+      <span className="text-sm font-medium">Back to Home</span>
+    </button> */}
+
+    {/* Page Title */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <Sparkles className="w-8 h-8" />
+          <h1 className="text-3xl sm:text-4xl font-bold">About Foscape</h1>
         </div>
+        <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
+          World-Class Aquatic Care Services - Specializing in aquariums, pools, and water gardens across South India
+        </p>
+      </div>
+    </div>
+
+    {/* Breadcrumb */}
+    <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
+      <span
+        onClick={() => navigate('/')}
+        className="hover:text-white cursor-pointer"
+      >
+        Home
+      </span>
+      <ChevronRight className="w-4 h-4" />
+      <span className="hover:text-white cursor-pointer">
+        About
+      </span>
+    </div>
+  </div>
+</div>
 
         <div className="max-w-7xl mx-auto px-4 -mt-8 pb-12">
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">

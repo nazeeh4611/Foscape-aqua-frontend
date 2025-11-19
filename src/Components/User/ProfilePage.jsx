@@ -218,8 +218,18 @@ export const ProfilePage = () => {
       <Navbar />
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
         <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-12">
-          <div className="max-w-7xl mx-auto px-6 md:px-8">
-            <button
+        <div
+    className="absolute inset-0 opacity-10"
+    style={{
+      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+      backgroundSize: '1000px 1000px',
+      backgroundPosition: 'left center',
+      backgroundRepeat: 'repeat-y',
+      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+    }}
+  />
+  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 mb-4 text-[#CFEAE3] hover:text-white transition-all"
             >

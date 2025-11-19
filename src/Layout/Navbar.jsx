@@ -167,365 +167,210 @@ const getHeadingColor = () => {
 
   return (
     <GoogleOAuthProvider clientId={ClientId}>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-teal-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div
-              className="flex items-center cursor-pointer"
-              onClick={handleLogoClick}
+<header
+  className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    isScrolled ? "bg-white shadow-md" : "bg-white"
+  }`}
+>
+  <div className="max-w-7xl mx-auto px-5 sm:px-8">
+    <div className="flex justify-between items-center h-20">
+      
+      <div className="flex items-center cursor-pointer select-none" onClick={handleLogoClick}>
+        <img
+          src={logo}
+          alt="Logo"
+          className="w-auto h-16 object-contain transition-all duration-300"
+        />
+      </div>
+
+      <nav className="hidden md:flex items-center space-x-8">
+        {[
+          { name: "Home", path: "/" },
+          { name: "Shop", path: "/categories" },
+          { name: "Gallery", path: "/gallery" },
+          { name: "Service", path: "/service" },
+          { name: "About", path: "/about" },
+          { name: "Contact", path: "/contact" },
+        ].map((item) => {
+          const active =
+            item.path === "/"
+              ? location.pathname === "/"
+              : location.pathname === item.path ||
+                location.pathname.startsWith(item.path + "/")
+
+          return (
+            <Link key={item.name} to={item.path} className="relative group py-2">
+              <span
+                className={`text-[16px] font-medium tracking-wide transition ${
+                  active
+                    ? "text-teal-600"
+                    : "text-gray-800 group-hover:text-teal-600"
+                }`}
+              >
+                {item.name}
+              </span>
+
+              <span
+                className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-300 ${
+                  active ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="flex items-center space-x-4">
+
+        {isLogged && (
+          <>
+            <button
+              onClick={() => setIsWishlistOpen(true)}
+              className="relative p-2 rounded-xl hover:bg-teal-50 transition"
             >
-              <div className="flex items-center space-x-3">
-                <img
-                  src={logo}
-                  alt="Logo"
-                  className="h-20 md:h-32 lg:h-24 w-auto object-contain hover:scale-105 transition-transform duration-200"
-                />
-              </div>
-            </div>
+              <Heart className="w-6 h-6 text-teal-600" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </button>
 
-            <nav className="hidden md:flex items-center space-x-8">
-  {/* Home */}
-  <Link to="/" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname === "/" || location.pathname === "/home"
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      Home
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname === "/" || location.pathname === "/home"
-          ? "w-full"
-          : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
-  <Link to="/categories" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname.startsWith("/categories")
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      Shop
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname.startsWith("/categories") ? "w-full" : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
-  <Link to="/gallery" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname === "/gallery" || location.pathname === "/gallery"
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      gallery
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname === "/gallery" || location.pathname === "/gallery"
-          ? "w-full"
-          : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 rounded-xl hover:bg-teal-50 transition"
+            >
+              <ShoppingCart className="w-6 h-6 text-teal-600" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </>
+        )}
 
-  {/* Service */}
-  <Link to="/service" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname.startsWith("/service")
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      Service
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname.startsWith("/service") ? "w-full" : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
+        <div className="hidden md:block">
+          {!isLogged ? (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm font-semibold shadow-md hover:scale-105 transition"
+            >
+              Sign In
+            </button>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm shadow-md hover:scale-105 transition"
+              >
+                <div className="w-7 h-7 rounded-full bg-white text-teal-600 text-xs font-bold flex items-center justify-center">
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                {user?.name}
+              </button>
 
-  {/* Shop */}
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-3 w-56 bg-white border border-teal-100 rounded-xl shadow-xl py-3">
+                  <div className="px-4 pb-3 border-b border-teal-100">
+                    <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+                    <p className="text-xs text-teal-600">{user?.email}</p>
+                  </div>
 
-
-  {/* About */}
-  <Link to="/about" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname.startsWith("/about")
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      About
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname.startsWith("/about") ? "w-full" : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
-
-  {/* Contact */}
-  <Link to="/contact" className="relative group py-2">
-    <span
-      className={`font-medium ${
-        location.pathname.startsWith("/contact")
-          ? "text-teal-600"
-          : "text-gray-700"
-      } group-hover:text-teal-600 transition-colors duration-300`}
-    >
-      Contact
-    </span>
-    <span
-      className={`absolute left-0 bottom-0 ${
-        location.pathname.startsWith("/contact") ? "w-full" : "w-0"
-      } h-0.5 bg-gradient-to-r from-teal-500 to-cyan-400 group-hover:w-full transition-all duration-300`}
-    ></span>
-  </Link>
-</nav>
-
-
-          <div className="flex items-center space-x-4">
-            {/* Cart and Wishlist Icons */}
-            {isLogged && (
-              <>
-                <button 
-                  onClick={() => setIsWishlistOpen(true)} 
-                  className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
-                >
-                  <Heart className="w-6 h-6 text-teal-600" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {wishlistCount}
-                    </span>
-                  )}
-                </button>
-
-                <button 
-                  onClick={() => setIsCartOpen(true)} 
-                  className="relative p-2 hover:bg-teal-50 rounded-lg transition-all"
-                >
-                  <ShoppingCart className="w-6 h-6 text-teal-600" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-              </>
-            )}
-
-            {/* Desktop Sign In Button - hidden on mobile */}
-            <div className="hidden md:block">
-              {!isLogged ? (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <span>Sign In</span>
-                </button>
-              ) : (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  <Link
+                    to="/profile"
+                    onClick={() => setShowProfileDropdown(false)}
+                    className="block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-600 transition rounded-lg"
                   >
-                    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs font-bold text-teal-600">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="hidden lg:block">{user?.name}</span>
-                  </button>
+                    Profile
+                  </Link>
 
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
-                      <div className="px-4 py-3 border-b border-teal-100">
-                        <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
-                        <p className="text-xs text-teal-600">{user?.email}</p>
-                      </div>
-                      <Link
-                        to="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        Profile
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-600 transition rounded-lg"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
+          )}
+        </div>
 
-            {/* Mobile Sign In Button - visible only on mobile when not logged in */}
-            {!isLogged && (
-              <div className="md:hidden">
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <span>Sign In</span>
-                </button>
-              </div>
-            )}
+        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          {isMenuOpen ? (
+            <X className="w-7 h-7 text-teal-600" />
+          ) : (
+            <Menu className="w-7 h-7 text-teal-600" />
+          )}
+        </button>
+      </div>
+    </div>
 
-            {isLogged && (
-              <div className="md:hidden relative">
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="inline-flex items-center justify-center p-2 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm font-bold text-teal-600">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
-                </button>
-
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-teal-100">
-                    <div className="px-4 py-3 border-b border-teal-100">
-                      <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
-                      <p className="text-xs text-teal-600">{user?.email}</p>
-                    </div>
-                    <Link
-                      to="/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:text-teal-600 transition-colors"
-                      onClick={() => setShowProfileDropdown(false)}
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button
-              className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? (
-                <X className="w-6 h-6 text-teal-600" />
-              ) : (
-                <Menu className="w-6 h-6 text-teal-600" />
-              )}
-            </button>
-          </div>
-          </div>
-
-          <div
-            className={`md:hidden transition-all duration-300 ease-in-out ${
-              isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-            } overflow-hidden`}
+    <div
+      className={`md:hidden transition-all duration-300 ${
+        isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+      } overflow-hidden`}
+    >
+      <nav className="px-4 py-4 space-y-4 bg-white border-t border-gray-100">
+        {["Home", "Shop", "Gallery", "Service", "About", "Contact"].map((item) => (
+          <Link
+            key={item}
+            to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+            onClick={handleMenuItemClick}
+            className="block text-lg font-medium text-gray-700 hover:text-teal-600 transition"
           >
-            <nav className="px-4 py-4 space-y-4 border-t border-teal-100">
-              <Link
-                to="/"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Home
-              </Link>
-              <Link
-                to="/categories"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Shop
-              </Link>
-              <Link
-                to="/gallery"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Gallery
-              </Link>
-              <Link
-                to="/service"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Service
-              </Link>
-             
-              <Link
-                to="/about"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                About
-              </Link>
-              <Link
-                to="/contact"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Contact
-              </Link>
+            {item}
+          </Link>
+        ))}
 
-                      <div className="pt-4 border-t border-teal-100">
-          {!isLogged ? (
+        {!isLogged ? (
+          <button
+            onClick={() => {
+              setShowAuthModal(true)
+              handleMenuItemClick()
+            }}
+            className="w-full py-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-lg font-semibold shadow-md hover:scale-105 transition"
+          >
+            Sign In
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg">
+              <p className="text-sm font-semibold">{user?.name}</p>
+              <p className="text-xs text-teal-600">{user?.email}</p>
+            </div>
+
+            <Link
+              to="/profile"
+              onClick={handleMenuItemClick}
+              className="block text-lg font-medium hover:text-teal-600 transition"
+            >
+              Profile
+            </Link>
+
             <button
               onClick={() => {
-                setShowAuthModal(true);
-                handleMenuItemClick();
+                handleLogout()
+                handleMenuItemClick()
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-600 hover:to-cyan-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full text-left text-lg hover:text-red-600 transition"
             >
-              <span>Sign In</span>
+              Logout
             </button>
-          ) : (
-            <div className="space-y-3">
-              <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-100">
-                <p className="text-sm font-semibold text-gray-700">
-                  {user?.name}
-                </p>
-                <p className="text-xs text-teal-600">{user?.email}</p>
-              </div>
-              <Link
-                to="/profile"
-                className="block py-2 text-lg font-medium text-gray-700 hover:text-teal-600 transition-colors duration-300"
-                onClick={handleMenuItemClick}
-              >
-                Profile
-              </Link>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  handleMenuItemClick();
-                }}
-                className="block w-full text-left py-2 text-lg font-medium text-gray-700 hover:text-red-600 transition-colors duration-300"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-                    </div>
-            </nav>
           </div>
-        </div>
-      </header>
+        )}
+      </nav>
+    </div>
+  </div>
+</header>
+
+
+
+
+
+
+
 
       {/* Cart Sidebar */}
       {(isCartOpen || isWishlistOpen) && (

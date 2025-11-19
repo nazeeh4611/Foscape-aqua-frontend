@@ -47,7 +47,7 @@ const Hero = () => {
         loop
         playsInline
         preload="none"
-        poster="/hero-thumbnail.jpg"
+        poster="/load.jpeg"
         loading="lazy"
         className="absolute inset-0 w-full h-full object-cover"
       >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image as ImgIcon, Video as VidIcon, Instagram as IgIcon, MapPin, Calendar, Youtube, ChevronRight, Search, Filter, Grid3x3 } from 'lucide-react';
+import { Image as ImgIcon, Video as VidIcon, Instagram as IgIcon, MapPin, Calendar, Youtube, ChevronRight, Search, Filter, Grid3x3, X, Maximize2, ChevronLeft } from 'lucide-react';
 import axios from 'axios';
 import { baseurl } from '../../Base/Base';
 import Navbar from '../../Layout/Navbar';
@@ -56,6 +56,8 @@ const Gallery = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [fullscreenImage, setFullscreenImage] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,6 +92,40 @@ const Gallery = () => {
     }
   };
 
+  const openModal = (item) => {
+    setSelected(item);
+    setCurrentImageIndex(0);
+  };
+
+  const closeModal = () => {
+    setSelected(null);
+    setCurrentImageIndex(0);
+    setFullscreenImage(false);
+  };
+
+  const openFullscreen = (index) => {
+    setFullscreenImage(true);
+    setCurrentImageIndex(index);
+  };
+
+  const closeFullscreen = () => {
+    setFullscreenImage(false);
+  };
+
+  const nextImage = (e) => {
+    e.stopPropagation();
+    if (selected && currentImageIndex < selected.mediaUrls.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+    }
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
+  };
+
   const getYouTubeThumbnail = (url) => {
     const id = getYouTubeIdFromUrl(url);
     if (!id) return '';
@@ -106,6 +142,13 @@ const Gallery = () => {
       'from-[#78C7A2] to-[#CFEAE3]'
     ];
     return gradients[index % gradients.length];
+  };
+
+  const getMediaIcon = (mediaType, isShort = false) => {
+    if (mediaType === 'image') return <ImgIcon className="w-5 h-5" />;
+    if (mediaType === 'youtube') return isShort ? <ShortsIcon size={20} /> : <Youtube className="w-5 h-5" />;
+    if (mediaType === 'instagram') return <IgIcon className="w-5 h-5" />;
+    return null;
   };
 
   if (loading) {
@@ -128,15 +171,38 @@ const Gallery = () => {
       <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center gap-3 mb-4">
-              <ImgIcon className="w-8 h-8" />
-              <h1 className="text-4xl font-bold">Our Gallery</h1>
+        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+              backgroundSize: '1000px 1000px',
+              backgroundPosition: 'left center',
+              backgroundRepeat: 'repeat-y',
+              maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+            }}
+          />
+          <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <ImgIcon className="w-8 h-8" />
+                  <h1 className="text-3xl sm:text-4xl font-bold">Our Gallery</h1>
+                </div>
+                <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
+                  Explore our creative projects, aquatic masterpieces, and behind-the-scenes stories
+                </p>
+              </div>
             </div>
-            <p className="text-[#CFEAE3] text-lg max-w-2xl">
-              Explore our creative projects, aquatic masterpieces, and behind-the-scenes stories
-            </p>
+
+            <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
+              <span onClick={() => navigate('/')} className="hover:text-white cursor-pointer">
+                Home
+              </span>
+              <ChevronRight className="w-4 h-4" />
+              <span className="hover:text-white cursor-pointer">Gallery</span>
+            </div>
           </div>
         </div>
 
@@ -155,43 +221,43 @@ const Gallery = () => {
               </div>
 
               <div className="flex gap-3 flex-wrap">
-                <button 
-                  onClick={() => setFilter('all')} 
+                <button
+                  onClick={() => setFilter('all')}
                   className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 ${
-                    filter === 'all' 
-                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg' 
+                    filter === 'all'
+                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   All
                 </button>
-                <button 
-                  onClick={() => setFilter('image')} 
+                <button
+                  onClick={() => setFilter('image')}
                   className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'image' 
-                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg' 
+                    filter === 'image'
+                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <ImgIcon className="w-4 h-4" />
                   Photos
                 </button>
-                <button 
-                  onClick={() => setFilter('youtube')} 
+                <button
+                  onClick={() => setFilter('youtube')}
                   className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'youtube' 
-                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg' 
+                    filter === 'youtube'
+                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <Youtube className="w-4 h-4" />
                   YouTube
                 </button>
-                <button 
-                  onClick={() => setFilter('instagram')} 
+                <button
+                  onClick={() => setFilter('instagram')}
                   className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'instagram' 
-                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg' 
+                    filter === 'instagram'
+                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -219,7 +285,7 @@ const Gallery = () => {
               {filteredGalleries.map((item, index) => {
                 const gradient = getGradientColor(index);
                 const isYouTubeShort = item.mediaType === 'youtube' && item.mediaUrls[0]?.includes('shorts/');
-                
+
                 return (
                   <div
                     key={item._id}
@@ -227,7 +293,7 @@ const Gallery = () => {
                   >
                     <div className="relative h-48 flex items-center justify-center bg-slate-50 overflow-hidden">
                       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
-                      
+
                       {item.mediaType === 'image' && (
                         <img
                           src={item.mediaUrls[0]}
@@ -237,9 +303,9 @@ const Gallery = () => {
                       )}
 
                       {item.mediaType === 'youtube' && (
-                        <a 
-                          href={item.mediaUrls[0]} 
-                          target="_blank" 
+                        <a
+                          href={item.mediaUrls[0]}
+                          target="_blank"
                           rel="noreferrer"
                           className="w-full h-full flex items-center justify-center relative"
                           onClick={(e) => e.stopPropagation()}
@@ -256,9 +322,9 @@ const Gallery = () => {
                       )}
 
                       {item.mediaType === 'instagram' && (
-                        <a 
-                          href={item.mediaUrls[0]} 
-                          target="_blank" 
+                        <a
+                          href={item.mediaUrls[0]}
+                          target="_blank"
                           rel="noreferrer"
                           className="w-full h-full flex items-center justify-center relative"
                           onClick={(e) => e.stopPropagation()}
@@ -277,9 +343,7 @@ const Gallery = () => {
                       )}
 
                       <div className={`absolute top-4 right-4 px-3 py-1 bg-gradient-to-r ${gradient} text-white text-xs font-semibold rounded-full shadow-lg`}>
-                        {item.mediaType === 'image' ? 'Photos' : 
-                         item.mediaType === 'youtube' ? (isYouTubeShort ? 'Shorts' : 'YouTube') : 
-                         'Instagram'}
+                        {item.mediaType === 'image' ? 'Photos' : item.mediaType === 'youtube' ? (isYouTubeShort ? 'Shorts' : 'YouTube') : 'Instagram'}
                       </div>
                     </div>
 
@@ -307,8 +371,8 @@ const Gallery = () => {
                         </div>
                       )}
 
-                      <button 
-                        onClick={() => setSelected(item)}
+                      <button
+                        onClick={() => openModal(item)}
                         className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 group-hover:bg-gradient-to-r group-hover:from-[#144E8C] group-hover:to-[#78CDD1] text-slate-700 group-hover:text-white rounded-xl font-medium transition-all duration-300"
                       >
                         <span className="text-sm">View Details</span>
@@ -321,93 +385,240 @@ const Gallery = () => {
             </div>
           )}
 
-          {selected && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-8">
-              <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl animate-fadeIn overflow-y-auto">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">{selected.heading}</h2>
-                    <p className="text-slate-600 mt-2">{selected.description}</p>
+          {/* Enhanced Modal */}
+          {selected && !fullscreenImage && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={closeModal}>
+              <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white p-6 flex items-center justify-between z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      {getMediaIcon(selected.mediaType, selected.mediaUrls[0]?.includes('shorts/'))}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">{selected.heading}</h2>
+                      <p className="text-sm text-white/80 mt-1">
+                        {selected.mediaType === 'image' ? 'Photo Gallery' : selected.mediaType === 'youtube' ? (selected.mediaUrls[0]?.includes('shorts/') ? 'YouTube Short' : 'YouTube Video') : 'Instagram Post'}
+                      </p>
+                    </div>
                   </div>
                   <button
-                    onClick={() => setSelected(null)}
-                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                    onClick={closeModal}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all"
                   >
-                    <span className="text-slate-600">×</span>
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {selected.mediaType === 'image' && selected.mediaUrls.map((url, index) => (
-                    <div key={index} className="rounded-xl overflow-hidden shadow-md">
-                      <img src={url} alt={selected.heading} className="w-full h-64 object-cover" />
+                {/* Modal Content */}
+                <div className="overflow-y-auto max-h-[calc(90vh-88px)]">
+                  <div className="p-6">
+                    {/* Description */}
+                    <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl p-6 mb-6">
+                      <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <div className="w-1 h-6 bg-gradient-to-b from-[#144E8C] to-[#78CDD1] rounded-full"></div>
+                        About
+                      </h3>
+                      <p className="text-slate-700 leading-relaxed">{selected.description}</p>
                     </div>
-                  ))}
 
-                  {selected.mediaType === 'youtube' && selected.mediaUrls.map((url, index) => {
-                    const isShort = url.includes('shorts/');
-                    return (
-                      <a 
-                        key={index} 
-                        href={url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="block rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                      >
-                        <div className="relative" style={{ paddingTop: isShort ? '177.78%' : '56.25%' }}>
-                          <img 
-                            src={selected.thumbnailUrl || getYouTubeThumbnail(url)} 
+                    {/* Main Image with Navigation - For Images */}
+                    {selected.mediaType === 'image' && (
+                      <>
+                        <div className="relative mb-6 bg-slate-50 rounded-2xl overflow-hidden">
+                          <img
+                            src={selected.mediaUrls[currentImageIndex]}
                             alt={selected.heading}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="w-full h-96 object-contain cursor-pointer"
+                            onClick={() => openFullscreen(currentImageIndex)}
                           />
-                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            {isShort ? <ShortsPlayButton /> : <YouTubePlayButton />}
-                          </div>
+                          
+                          {/* Fullscreen Button */}
+                          <button
+                            onClick={() => openFullscreen(currentImageIndex)}
+                            className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-lg"
+                          >
+                            <Maximize2 className="w-5 h-5 text-slate-700" />
+                          </button>
+                          
+                          {/* Navigation Arrows */}
+                          {selected.mediaUrls.length > 1 && (
+                            <>
+                              {currentImageIndex > 0 && (
+                                <button
+                                  onClick={prevImage}
+                                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-lg"
+                                >
+                                  <ChevronLeft className="w-6 h-6 text-slate-700" />
+                                </button>
+                              )}
+                              {currentImageIndex < selected.mediaUrls.length - 1 && (
+                                <button
+                                  onClick={nextImage}
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-lg"
+                                >
+                                  <ChevronRight className="w-6 h-6 text-slate-700" />
+                                </button>
+                              )}
+                              
+                              {/* Image Counter */}
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 backdrop-blur-sm text-white text-sm rounded-full">
+                                {currentImageIndex + 1} / {selected.mediaUrls.length}
+                              </div>
+                            </>
+                          )}
                         </div>
-                      </a>
-                    );
-                  })}
 
-                  {selected.mediaType === 'instagram' && selected.mediaUrls.map((url, index) => (
-                    <a 
-                      key={index} 
-                      href={url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="block rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                    >
-                      <div className="relative" style={{ paddingTop: '125%' }}>
-                        <img 
-                          src={selected.thumbnailUrl || selected.thumbnail || ''} 
-                          alt={selected.heading}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 flex items-center justify-center">
-                          <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
-                            <IgIcon className="w-10 h-10 text-white" />
+                        {/* Thumbnail Gallery */}
+                        {selected.mediaUrls.length > 1 && (
+                          <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                            {selected.mediaUrls.map((url, index) => (
+                              <img
+                                key={index}
+                                src={url}
+                                alt={`${selected.heading} ${index + 1}`}
+                                onClick={() => setCurrentImageIndex(index)}
+                                className={`w-24 h-24 object-cover rounded-xl cursor-pointer flex-shrink-0 transition-all ${
+                                  currentImageIndex === index 
+                                    ? 'ring-4 ring-[#144E8C] scale-105' 
+                                    : 'opacity-60 hover:opacity-100 hover:scale-105'
+                                }`}
+                              />
+                            ))}
                           </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Media Grid - For YouTube and Instagram */}
+                    {selected.mediaType !== 'image' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {selected.mediaType === 'youtube' && selected.mediaUrls.map((url, index) => {
+                          const isShort = url.includes('shorts/');
+                          return (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow bg-slate-50"
+                            >
+                              <div className="relative" style={{ paddingTop: isShort ? '177.78%' : '56.25%' }}>
+                                <img
+                                  src={selected.thumbnailUrl || getYouTubeThumbnail(url)}
+                                  alt={selected.heading}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center hover:bg-black/30 transition-colors">
+                                  {isShort ? <ShortsPlayButton /> : <YouTubePlayButton />}
+                                </div>
+                              </div>
+                            </a>
+                          );
+                        })}
+
+                        {selected.mediaType === 'instagram' && selected.mediaUrls.map((url, index) => (
+                          <a
+                            key={index}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow bg-slate-50"
+                          >
+                            <div className="relative" style={{ paddingTop: '125%' }}>
+                              <img
+                                src={selected.thumbnailUrl || selected.thumbnail || ''}
+                                alt={selected.heading}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 flex items-center justify-center hover:from-black/50 transition-colors">
+                                <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
+                                  <IgIcon className="w-10 h-10 text-white" />
+                                </div>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Details Grid */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="flex items-start gap-3 bg-white border-2 border-slate-100 rounded-xl p-4 hover:border-[#144E8C] transition-colors">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#144E8C] to-[#78CDD1] rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <Calendar className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500 font-medium mb-1">Published</p>
+                          <p className="font-bold text-slate-800 text-lg">
+                            {new Date(selected.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
                         </div>
                       </div>
-                    </a>
-                  ))}
-                </div>
 
-                <div className="flex items-center gap-4 text-sm text-slate-600 border-t pt-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(selected.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                  
-                  {selected.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-blue-500" />
-                      {selected.location}
+                      {selected.location && (
+                        <div className="flex items-start gap-3 bg-white border-2 border-slate-100 rounded-xl p-4 hover:border-[#144E8C] transition-colors">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#144E8C] to-[#78CDD1] rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <MapPin className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-500 font-medium mb-1">Location</p>
+                            <p className="font-bold text-slate-800 text-lg">{selected.location}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Fullscreen Image Viewer */}
+          {fullscreenImage && selected && selected.mediaType === 'image' && (
+            <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center animate-fadeIn" onClick={closeFullscreen}>
+              <button
+                onClick={closeFullscreen}
+                className="absolute top-6 right-6 w-14 h-14 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center z-10 transition-all"
+              >
+                <X className="w-7 h-7 text-white" />
+              </button>
+
+              <div className="relative w-full h-full flex items-center justify-center p-8">
+                <img
+                  src={selected.mediaUrls[currentImageIndex]}
+                  alt={selected.heading}
+                  className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+
+                {selected.mediaUrls.length > 1 && (
+                  <>
+                    {currentImageIndex > 0 && (
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-6 top-1/2 -translate-y-1/2 w-16 h-16 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+                      >
+                        <ChevronLeft className="w-8 h-8 text-white" />
+                      </button>
+                    )}
+                    {currentImageIndex < selected.mediaUrls.length - 1 && (
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-6 top-1/2 -translate-y-1/2 w-16 h-16 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+                      >
+                        <ChevronRight className="w-8 h-8 text-white" />
+                      </button>
+                    )}
+                  </>
+                )}
+
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/70 backdrop-blur-sm text-white text-base rounded-full font-medium">
+                  {currentImageIndex + 1} / {selected.mediaUrls.length}
                 </div>
               </div>
             </div>
@@ -417,10 +628,10 @@ const Gallery = () => {
             <div className="max-w-7xl mx-auto px-4 text-center">
               <p className="text-slate-600 mb-4">Want to see more of our work?</p>
               <Link to="/contact">
-              <button className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                Contact Us
-                <ChevronRight className="w-5 h-5" />
-              </button>
+                <button className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                  Contact Us
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </Link>
             </div>
           </div>
@@ -428,6 +639,36 @@ const Gallery = () => {
       </div>
 
       <Footer />
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 };

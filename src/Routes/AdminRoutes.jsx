@@ -14,6 +14,7 @@ import { Outlet } from "react-router-dom";
 import PrivateRoute from "./Private";
 import AdminDashboard from "../Components/Admin/Dashboard";
 import AdminSettings from "../Components/Admin/Settings";
+import PortfolioAdmin from "../Components/Admin/Projects";
 
 const AdminLayout = () => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -43,7 +44,14 @@ const AdminLayout = () => {
 export default function AdminRoute() {
   return (
     <Routes>
-      <Route path="/login" element={<AdminLogin />} />
+<Route
+  path="/login"
+  element={
+    localStorage.getItem("Atoken") 
+      ? <Navigate to="/admin/dashboard" replace />
+      : <AdminLogin />
+  }
+/>
 
       <Route
         path="/"
@@ -63,6 +71,7 @@ export default function AdminRoute() {
         <Route path="sales" element={<SalesReport />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="projects" element={<PortfolioAdmin />} />
       </Route>
     </Routes>
   );

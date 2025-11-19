@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, MessageSquare, Calendar } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, MessageSquare, Calendar, ChevronRight, ArrowLeft } from 'lucide-react';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
 import { baseurl } from '../../Base/Base';
 import axios from 'axios';
 import { useToast } from '../../Context.js/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 
 const ContactPage = () => {
@@ -15,11 +16,32 @@ const ContactPage = () => {
     subject: '',
     message: ''
   });
+  const navigate = useNavigate()
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userData, setUserData] = useState(null);
   const showToast = useToast();
+  const [phone, setPhone] = useState("Loading...");
+  const fallbackNumber = "8547483891";
 
+  useEffect(() => {
+    const fetchPhone = async () => {
+      try {
+        const res = await axios.get(`${baseurl}user/phone`, { withCredentials: true });
 
+        if (res?.data?.phone) {
+          setPhone(res.data.phone);
+        } else {
+          setPhone(fallbackNumber);
+        }
+      } catch (err) {
+        console.log("Phone fetch error:", err);
+        setPhone(fallbackNumber);
+      }
+    };
+
+    fetchPhone();
+  }, []);
   useEffect(() => {
     fetchUserData();
   }, []);
@@ -33,6 +55,12 @@ const ContactPage = () => {
     }
   };
 
+  const cleanPhoneNumber = (num) => {
+    if (!num) return fallbackNumber;
+    return num.replace(/\D/g, ""); 
+  };
+  
+
   const contactInfo = [
     {
       icon: Mail,
@@ -43,15 +71,10 @@ const ContactPage = () => {
     {
       icon: Phone,
       title: 'Phone',
-      content: '+91-854 748 3891',
-      link: 'tel:+918547483891'
+      content: phone,
+      link: `tel:${phone}`
     },
-    {
-      icon: Phone,
-      title: 'Alternate Phone',
-      content: '+91-95446 53891',
-      link: 'tel:+919544653891'
-    },
+
     {
       icon: MapPin,
       title: 'Address',
@@ -105,36 +128,89 @@ const ContactPage = () => {
     }
   };
 
-  console.log(userData,"is here")
 
   const handleBookConsultation = () => {
-    const phoneNumber = '918547483891';
-    const userName = userData.user?.name || userData.user.name || 'Not provided';
-    const userEmail = userData.user?.email || userData.user.email || 'Not provided';
-    const userPhone = userData.user?.phone || userData.user.phone || 'Not provided';
-    
-    const message = `Hello Foscape Team,\n\nI would like to request a consultation for aquatic care services.\n\nMy Details:\nName: ${userName}\nEmail: ${userEmail}\nPhone: ${userPhone}\n\nPlease contact me to schedule an appointment.`;
-    
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    const cleanedNumber = cleanPhoneNumber(phone);
+  
+    const finalNumber = cleanedNumber.startsWith("91")
+      ? cleanedNumber
+      : `91${cleanedNumber}`;
+  
+    const userName = userData?.user?.name || "Not provided";
+    const userEmail = userData?.user?.email || "Not provided";
+    const userPhone = userData?.user?.phone || "Not provided";
+  
+    const message = `Hello Foscape Team,
+  
+  I would like to request a consultation for aquatic care services.
+  
+  My Details:
+  Name: ${userName}
+  Email: ${userEmail}
+  Phone: ${userPhone}
+  
+  Please contact me to schedule an appointment.`;
+  
+    const whatsappUrl = `https://wa.me/${finalNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
   };
+  
 
   return (
     <>
       <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center gap-3 mb-4">
-              <MessageSquare className="w-8 h-8" />
-              <h1 className="text-4xl font-bold">Contact Us</h1>
-            </div>
-            <p className="text-[#CFEAE3] text-lg max-w-2xl">
-              Get in touch with us for aquatic care consultation and services
-            </p>
-          </div>
+      <div className=" bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+      <div
+    className="absolute inset-0 opacity-10"
+    style={{
+      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+      backgroundSize: '1000px 1000px',
+      backgroundPosition: 'left center',
+      backgroundRepeat: 'repeat-y',
+      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+    }}
+  />
+  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10"> 
+    {/* <button
+      onClick={() => navigate('/')}
+      className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
+    >
+      <ArrowLeft className="w-5 h-5" />
+      <span className="text-sm font-medium">Back to Home</span>
+    </button> */}
+    {/* Page Title */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <MessageSquare className="w-8 h-8" />
+          <h1 className="text-3xl sm:text-4xl font-bold">Contact Us</h1>
         </div>
+        <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
+          Get in touch with us for aquatic care consultation and services
+        </p>
+      </div>
+    </div>
+
+    {/* Breadcrumb */}
+    <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
+      <span
+        onClick={() => navigate('/')}
+        className="hover:text-white cursor-pointer"
+      >
+        Home
+      </span>
+      <ChevronRight className="w-4 h-4" />
+      <span className="hover:text-white cursor-pointer">
+        Contact
+      </span>
+    </div>
+
+  </div>
+</div>
+
 
         <div className="max-w-7xl mx-auto px-4 -mt-8 pb-12">
           <div className="grid lg:grid-cols-3 gap-8 mb-8">

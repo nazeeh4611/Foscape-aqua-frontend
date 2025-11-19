@@ -169,26 +169,26 @@ export default function AdminGalleryPage() {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const totalFiles = imageFiles.length + files.length;
-
-    if (totalFiles > 3) {
-      showToast('Maximum 3 images allowed', 'error');
+  
+    if (totalFiles > 10) { // Changed from 3 to 10
+      showToast('Maximum 10 images allowed', 'error');
       return;
     }
-
+  
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
         showToast('Each image must be less than 5MB', 'error');
         return;
       }
-
+  
       if (!file.type.startsWith('image/')) {
         showToast('Please upload valid image files', 'error');
         return;
       }
     }
-
+  
     setImageFiles(prev => [...prev, ...files]);
-
+  
     files.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -196,7 +196,7 @@ export default function AdminGalleryPage() {
       };
       reader.readAsDataURL(file);
     });
-
+  
     if (errors.mediaUrl) {
       setErrors({ ...errors, mediaUrl: '' });
     }
@@ -896,55 +896,55 @@ export default function AdminGalleryPage() {
                 </div>
 
                 {formData.mediaType === 'image' ? (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Images <span className="text-red-500">*</span> <span className="text-gray-500 text-xs">(Max 3)</span>
-                    </label>
-                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${errors.mediaUrl ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="image-upload"
-                        disabled={imageFiles.length >= 3}
+              <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Images <span className="text-red-500">*</span> <span className="text-gray-500 text-xs">(Max 10)</span>
+              </label>
+              <div className={`border-2 border-dashed rounded-lg p-4 text-center ${errors.mediaUrl ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                  disabled={imageFiles.length >= 10} // Changed from 3 to 10
+                />
+                <label htmlFor="image-upload" className={`cursor-pointer ${imageFiles.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs font-medium text-gray-700">
+                    {imageFiles.length >= 10 ? 'Maximum images uploaded' : 'Upload images'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {imageFiles.length}/10 images
+                  </p>
+                </label>
+              </div>
+              {errors.mediaUrl && <p className="text-xs text-red-600 mt-1">{errors.mediaUrl}</p>}
+            
+              {imagePreviews.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border border-gray-300"
                       />
-                      <label htmlFor="image-upload" className={`cursor-pointer ${imageFiles.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-xs font-medium text-gray-700">
-                          {imageFiles.length >= 3 ? 'Maximum images uploaded' : 'Upload images'}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {imageFiles.length}/3 images
-                        </p>
-                      </label>
+                      {index < imageFiles.length && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
-                    {errors.mediaUrl && <p className="text-xs text-red-600 mt-1">{errors.mediaUrl}</p>}
-
-                    {imagePreviews.length > 0 && (
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        {imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={preview}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded border border-gray-300"
-                            />
-                            {index < imageFiles.length && (
-                              <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  ))}
+                </div>
+              )}
+            </div>
                 ) : (
                   <>
                     <div>

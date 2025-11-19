@@ -17,10 +17,15 @@ import { ProfilePage } from "../Components/User/ProfilePage";
 import Gallery from "../Components/User/GalleryPage";
 import { UserPrivateRoute } from "./Private";
 import { PrivacyPolicy, RefundPolicy, ShippingPolicy, TermsConditions } from "../Components/Policy/Privacy";
+import FloatingIcons from "../Layout/Icons";
+import PortfolioPage from "../Components/User/Works";
 
 
 function UserRoute() {
   return (
+    <>
+    <FloatingIcons />
+
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/categories" element={<CategoriesPage />} />
@@ -93,7 +98,9 @@ function UserRoute() {
       <Route path="/service" element={<ServicesPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/gallery" element={<Gallery />} />
+      <Route path="/works" element={<PortfolioPage />} />
     </Routes>
+    </>
   );
 }
 

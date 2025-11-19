@@ -1,16 +1,48 @@
 import React, { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { baseurl } from "../Base/Base";
+import axios from "axios";
 
 const FloatingIcons = () => {
 
+  const [phone, setPhone] = useState("Loading...");
+  const fallbackNumber = "8547483891";
+  
 
+  useEffect(() => {
+    const fetchPhone = async () => {
+      try {
+        const res = await axios.get(`${baseurl}user/phone`, { withCredentials: true });
+
+        if (res?.data?.phone) {
+          setPhone(res.data.phone);
+        } else {
+          setPhone(fallbackNumber);
+        }
+      } catch (err) {
+        console.log("Phone fetch error:", err);
+        setPhone(fallbackNumber);
+      }
+    };
+
+    fetchPhone();
+  }, []);
+  const cleanPhoneNumber = (num) => {
+    if (!num) return fallbackNumber;
+    return num.replace(/\D/g, ""); 
+  };
+
+  const cleanedNumber = cleanPhoneNumber(phone);
+  const finalNumber = cleanedNumber.startsWith("91")
+  ? cleanedNumber
+  : `91${cleanedNumber}`;
 
 
   return (
     <div className="fixed bottom-20 right-6 flex flex-col items-center gap-4 z-50">
 
       <a
-        href="https://wa.me/8547483891"
+        href={`https://wa.me/${finalNumber}?text=${encodeURIComponent(message)}`}
         target="_blank"
         rel="noreferrer"
         className="floating-icon bg-white rounded-full shadow-lg p-2"

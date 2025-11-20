@@ -206,10 +206,16 @@ const ProductsPage = () => {
   };
 
   const handleProductClick = (productId, e) => {
-    if (e.ctrlKey || e.metaKey || e.button === 1) {
+    // Don't navigate if clicking on the wishlist button
+    if (e.target.closest('.wishlist-button')) {
       return;
     }
-    e.preventDefault();
+    
+    if (e.ctrlKey || e.metaKey || e.button === 1) {
+      window.open(`/product/${productId}`, '_blank');
+      return;
+    }
+    
     navigate(`/product/${productId}`);
   };
 
@@ -451,7 +457,8 @@ const ProductsPage = () => {
                       return (
                         <div
                           key={product._id}
-                          className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+                          onClick={(e) => handleProductClick(product._id, e)}
+                          className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                         >
                           <div className="relative h-64 overflow-hidden bg-slate-50">
                             <div
@@ -517,19 +524,13 @@ const ProductsPage = () => {
                             </div>
 
                             <div className="flex gap-2">
-                              <a
-                                href={`/product/${product._id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => handleProductClick(product._id, e)}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
-                              >
+                              <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-medium group-hover:shadow-lg transition-all duration-300">
                                 <Eye className="w-4 h-4" />
                                 <span className="text-sm">View Details</span>
-                              </a>
+                              </div>
                               <button
                                 onClick={(e) => handleWishlistToggle(product._id, e)}
-                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                                className={`wishlist-button px-4 py-2.5 rounded-xl transition-all duration-300 ${
                                   inWishlist
                                     ? 'bg-red-50 hover:bg-red-100'
                                     : 'bg-slate-100 hover:bg-slate-200'

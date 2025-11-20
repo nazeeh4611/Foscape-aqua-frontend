@@ -166,6 +166,7 @@ const SubCategoriesPage = () => {
                 return (
                   <div
                     key={subCategory._id}
+                    onClick={() => navigate(`/products/subcategory/${subCategory._id}`)}
                     className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                   >
                     <div className="relative h-48 overflow-hidden">
@@ -192,27 +193,24 @@ const SubCategoriesPage = () => {
                         {subCategory.description}
                       </p>
 
-                      <button
-                  onClick={() => navigate(`/products/subcategory/${subCategory._id}`)}
-                  className="
-                    w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-300 
+                      <div
+                        className="
+                          w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-300 
 
-                    /* MOBILE (DEFAULT) — always blue */
-                    text-white bg-gradient-to-r from-[#144E8C] to-[#78CDD1]
+                          /* MOBILE (DEFAULT) — always blue */
+                          text-white bg-gradient-to-r from-[#144E8C] to-[#78CDD1]
 
-                    /* DESKTOP Normal */
-                    sm:text-slate-700 sm:bg-slate-50
+                          /* DESKTOP Normal */
+                          sm:text-slate-700 sm:bg-slate-50
 
-                    /* DESKTOP Hover */
-                    sm:group-hover:bg-gradient-to-r sm:group-hover:from-[#144E8C] sm:group-hover:to-[#78CDD1]
-                    sm:group-hover:text-white
-                  "
-                >
-                  <span className="text-sm">View Products</span>
-                  <ChevronRight className="w-4 h-4 sm:group-hover:translate-x-1 transition-transform" />
-                </button>
-
-
+                          /* DESKTOP Hover */
+                          sm:group-hover:bg-gradient-to-r sm:group-hover:from-[#144E8C] sm:group-hover:to-[#78CDD1]
+                          sm:group-hover:text-white
+                        "
+                      >
+                        <span className="text-sm">View Products</span>
+                        <ChevronRight className="w-4 h-4 sm:group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
                 );

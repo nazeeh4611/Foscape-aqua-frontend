@@ -625,7 +625,7 @@ export default function HomePage() {
   <Navbar />
   <Hero />
 
-  <section className="py-20" data-aos="fade-up">
+  <section className="" data-aos="fade-up">
     <CategoryComponent />
   </section>
 

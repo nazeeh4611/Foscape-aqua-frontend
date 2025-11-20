@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, MapPin, Calendar, User, Clock, Maximize2, ArrowLeft, Grid3x3 } from 'lucide-react';
+import {
+  X, ChevronLeft, ChevronRight, MapPin, Calendar, User,
+  Clock, Maximize2, ArrowLeft, Grid3x3
+} from 'lucide-react';
 import axios from 'axios';
 import { baseurl } from '../../Base/Base';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
 import { useNavigate } from 'react-router-dom';
+
 const PortfolioPage = () => {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +16,8 @@ const PortfolioPage = () => {
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
- const navigate = useNavigate()
+  const navigate = useNavigate();
+
   const categories = [
     { id: 'all', name: 'All Projects' },
     { id: 'pond', name: 'Ponds' },
@@ -33,9 +38,9 @@ const PortfolioPage = () => {
         selectedCategory === "all"
           ? `${baseurl}user/portfolios`
           : `${baseurl}user/portfolios?category=${selectedCategory}`;
-  
+
       const response = await axios.get(url);
-  
+
       if (response.data.success) {
         setPortfolios(response.data.portfolios);
       }
@@ -86,45 +91,43 @@ const PortfolioPage = () => {
 
   return (
     <>
-    <Navbar/>
-    <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-    <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
-    <div
-    className="absolute inset-0 opacity-10"
-    style={{
-      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
-      backgroundSize: '1000px 1000px',
-      backgroundPosition: 'left center',
-      backgroundRepeat: 'repeat-y',
-      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
-      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
-    }}
-  />
-  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             {/* Back Button */}
-            {/* <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Back to Home</span>
-            </button> */}
+      <Navbar />
 
-            {/* Page Title */}
+      <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
+
+        {/* HEADER SECTION WITH PATTERN FIX */}
+        <div className="relative bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+
+          {/* Pattern Background */}
+          <div
+            className="absolute inset-0 opacity-10 z-0 pointer-events-none"
+            style={{
+              backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+              backgroundSize: '1000px 1000px',
+              backgroundPosition: 'left center',
+              backgroundRepeat: 'repeat-y',
+              maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+            }}
+          />
+
+          {/* CONTENT */}
+          <div className="relative max-w-7xl mx-auto px-6 md:px-8 z-10">
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <Grid3x3 className="w-8 h-8" />
                   <h1 className="text-3xl sm:text-4xl font-bold">
-                   Our Works & Designs
+                    Our Works & Designs
                   </h1>
                 </div>
                 <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
-                Explore our collection of stunning aquatic projects and custom designs
+                  Explore our collection of stunning aquatic projects and custom designs
                 </p>
               </div>
             </div>
 
-            {/* Breadcrumb */}
             <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
               <span
                 onClick={() => navigate('/')}
@@ -133,91 +136,92 @@ const PortfolioPage = () => {
                 Home
               </span>
               <ChevronRight className="w-4 h-4" />
-              <span
-                className="hover:text-white cursor-pointer"
-              >
-                Projects
-              </span>
-           
-              <span className="font-semibold text-white">
-              </span>
+              <span className="hover:text-white cursor-pointer">Projects</span>
             </div>
           </div>
         </div>
-      
 
-      <div className="max-w-7xl mx-auto px-4 -mt-8 pb-12">
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex flex-wrap gap-3 mb-8">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 ${
-                  selectedCategory === category.id
-                    ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
+        {/* CATEGORY + GRID */}
+        <div className="max-w-7xl mx-auto px-4 -mt-8 pb-12 relative z-20">
 
-          {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-slate-100 rounded-xl h-80 animate-pulse"></div>
-              ))}
-            </div>
-          ) : portfolios.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-slate-600 text-lg">No projects found in this category</p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {portfolios.map((portfolio) => (
-                <div
-                  key={portfolio._id}
-                  onClick={() => openModal(portfolio)}
-                  className="bg-white border-2 border-slate-100 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+
+            {/* CATEGORY BUTTONS */}
+            <div className="flex flex-wrap gap-3 mb-8">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 ${
+                    selectedCategory === category.id
+                      ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-lg'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
                 >
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={portfolio.mediaUrls[0]}
-                      alt={portfolio.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 right-3 px-3 py-1 bg-white bg-opacity-90 rounded-full text-sm font-semibold text-[#144E8C] capitalize">
-                      {portfolio.category}
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">{portfolio.name}</h3>
-                    <p className="text-slate-600 text-sm line-clamp-2 mb-3">
-                      {portfolio.description}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-slate-500">
-                      {portfolio.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{portfolio.location}</span>
-                        </div>
-                      )}
-                      {portfolio.completionDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{formatDate(portfolio.completionDate)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  {category.name}
+                </button>
               ))}
             </div>
-          )}
+
+            {/* PORTFOLIO GRID */}
+            {loading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-slate-100 rounded-xl h-80 animate-pulse"></div>
+                ))}
+              </div>
+            ) : portfolios.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-slate-600 text-lg">No projects found in this category</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {portfolios.map((portfolio) => (
+                  <div
+                    key={portfolio._id}
+                    onClick={() => openModal(portfolio)}
+                    className="bg-white border-2 border-slate-100 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="relative h-64 overflow-hidden">
+                      <img
+                        src={portfolio.mediaUrls[0]}
+                        alt={portfolio.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 right-3 px-3 py-1 bg-white bg-opacity-90 rounded-full text-sm font-semibold text-[#144E8C] capitalize">
+                        {portfolio.category}
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-slate-800 mb-2">
+                        {portfolio.name}
+                      </h3>
+                      <p className="text-slate-600 text-sm line-clamp-2 mb-3">
+                        {portfolio.description}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-sm text-slate-500">
+                        {portfolio.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            <span>{portfolio.location}</span>
+                          </div>
+                        )}
+                        {portfolio.completionDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>{formatDate(portfolio.completionDate)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
       {selectedPortfolio && !fullscreenImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={closeModal}>

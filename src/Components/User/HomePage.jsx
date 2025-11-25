@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Layout/Navbar'
 import Hero from '../../Layout/Hero'
@@ -10,6 +10,38 @@ import 'aos/dist/aos.css';
 import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
+// ========== CACHE UTILITY ==========
+const CACHE_KEY = 'aquatic_categories_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const getCachedCategories = () => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const setCachedCategories = (categories) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      data: categories,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    console.warn('Cache failed:', error);
+  }
+};
+
+// ========== OPTIMIZED CATEGORY COMPONENT ==========
 const CategoryComponent = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [categories, setCategories] = useState([]);
@@ -18,13 +50,27 @@ const CategoryComponent = () => {
 
   const fetchCategories = async () => {
     try {
+      // Check cache first
+      const cached = getCachedCategories();
+      if (cached) {
+        setCategories(cached);
+        if (cached.length > 0) {
+          setActiveCategory(cached[0]._id);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fetch from API
       const response = await axios.get(`${baseurl}user/category`);
   
       if (response.data.success) {
-        setCategories(response.data.categories);
+        const fetchedCategories = response.data.categories;
+        setCategories(fetchedCategories);
+        setCachedCategories(fetchedCategories); // Cache the result
   
-        if (response.data.categories.length > 0) {
-          setActiveCategory(response.data.categories[0]._id);
+        if (fetchedCategories.length > 0) {
+          setActiveCategory(fetchedCategories[0]._id);
         }
       }
     } catch (error) {
@@ -38,23 +84,18 @@ const CategoryComponent = () => {
     fetchCategories();
   }, []);
 
-  const getGradientColor = (index) => {
-    const gradients = [
-      'from-blue-500 to-cyan-500',
-      'from-emerald-500 to-teal-500',
-      'from-purple-500 to-pink-500',
-      'from-orange-500 to-red-500',
-      'from-indigo-500 to-blue-500',
-      'from-pink-500 to-rose-500',
-      'from-teal-500 to-cyan-500',
-      'from-amber-500 to-orange-500'
-    ];
-    return gradients[index % gradients.length];
-  };
+  const gradients = useMemo(() => [
+    'from-blue-500 to-cyan-500',
+    'from-emerald-500 to-teal-500',
+    'from-purple-500 to-pink-500',
+    'from-orange-500 to-red-500',
+    'from-indigo-500 to-blue-500',
+    'from-pink-500 to-rose-500',
+    'from-teal-500 to-cyan-500',
+    'from-amber-500 to-orange-500'
+  ], []);
 
-  const handleCategoryClick = (categoryId) => {
-    navigate(`/${categoryId}/sub-category`);
-  };
+  const getGradientColor = (index) => gradients[index % gradients.length];
 
   const handleViewProducts = (categoryId) => {
     navigate(`/${categoryId}/sub-category`);
@@ -64,7 +105,10 @@ const CategoryComponent = () => {
     navigate('/categories');
   };
 
-  const activeData = categories.find(cat => cat._id === activeCategory);
+  const activeData = useMemo(
+    () => categories.find(cat => cat._id === activeCategory),
+    [categories, activeCategory]
+  );
 
   if (loading) {
     return (
@@ -72,7 +116,12 @@ const CategoryComponent = () => {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="animate-pulse">
             <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
-            <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto"></div>
+            <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
+            <div className="flex flex-wrap justify-center gap-6 mb-12">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -113,6 +162,8 @@ const CategoryComponent = () => {
                     src={category.image} 
                     alt={category.name}
                     className="w-14 h-14 object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 
@@ -140,6 +191,8 @@ const CategoryComponent = () => {
                       src={activeData.image} 
                       alt={activeData.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 </div>
@@ -178,6 +231,7 @@ const CategoryComponent = () => {
   );
 };
 
+// ========== SERVICES COMPONENT (No changes needed) ==========
 const Services = () => {
   const navigate = useNavigate();
 
@@ -289,11 +343,6 @@ const WhyChooseUs = () => {
     </div>
   );
 };
-
-
-
-
- ;
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -407,9 +456,6 @@ const Testimonials = () => {
   );
 };
 
-
-
-
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -420,7 +466,7 @@ const FeaturedProducts = () => {
   const scrollLeftRef = useRef(0);
   const animationRef = useRef(null);
 
-  const speed = 1.2; // Smooth speed (pixels per frame)
+  const speed = 1.2;
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -437,7 +483,6 @@ const FeaturedProducts = () => {
     fetchFeaturedProducts();
   }, []);
 
-  // ✨ SMOOTH AUTO-SCROLL with requestAnimationFrame (60fps)
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider || products.length === 0) return;
@@ -446,7 +491,6 @@ const FeaturedProducts = () => {
       if (!isDraggingRef.current) {
         slider.scrollLeft += speed;
 
-        // Seamless loop at halfway point
         if (slider.scrollLeft >= slider.scrollWidth / 2) {
           slider.scrollLeft = 0;
         }
@@ -463,7 +507,6 @@ const FeaturedProducts = () => {
     };
   }, [products.length, speed]);
 
-  // 🎯 DRAG/TOUCH HANDLERS (Mobile optimized)
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -485,11 +528,10 @@ const FeaturedProducts = () => {
       if (!isDraggingRef.current) return;
       e.preventDefault();
       const x = e.pageX || e.touches?.[0].pageX;
-      const walk = (x - startXRef.current) * 2.5; // Drag sensitivity
+      const walk = (x - startXRef.current) * 2.5;
       slider.scrollLeft = scrollLeftRef.current - walk;
     };
 
-    // Passive listeners for better mobile performance
     slider.addEventListener("mousedown", start, { passive: true });
     slider.addEventListener("touchstart", start, { passive: true });
     slider.addEventListener("mousemove", move, { passive: false });
@@ -510,7 +552,6 @@ const FeaturedProducts = () => {
   }, []);
 
   const handleClick = (id) => {
-    // Prevent navigation during drag
     if (!isDraggingRef.current) {
       navigate(`/product/${id}`);
     }
@@ -538,16 +579,14 @@ const FeaturedProducts = () => {
         </p>
       </div>
 
-      {/* 🚀 SMOOTH SCROLL CONTAINER */}
       <div
         ref={sliderRef}
         className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none"
         style={{ 
-          WebkitOverflowScrolling: 'touch', // iOS momentum scrolling
+          WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none'
         }}
       >
-        {/* Triple products for seamless loop */}
         {[...products, ...products, ...products].map((product, index) => (
           <div
             key={`${product._id}-${index}`}
@@ -561,6 +600,7 @@ const FeaturedProducts = () => {
                   className="w-full h-full object-cover"
                   alt={product.name}
                   loading="lazy"
+                  decoding="async"
                   draggable="false"
                 />
                 {product.discount > 0 && (
@@ -615,46 +655,51 @@ const FeaturedProducts = () => {
     </div>
   );
 };
+
 export default function HomePage() {
   useEffect(() => {
-    AOS.init({ duration: 900, once: true });
+    AOS.init({ 
+      duration: 600, 
+      once: true,
+      offset: 50,
+      disable: 'mobile' // Disable on mobile for better performance
+    });
   }, []);
 
   return (
-<div className="bg-white">
-  <Navbar />
-  <Hero />
+    <div className="bg-white">
+      <Navbar />
+      <Hero />
 
-  <section className="" data-aos="fade-up">
-    <CategoryComponent />
-  </section>
+      <section data-aos="fade-up">
+        <CategoryComponent />
+      </section>
 
-  <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
-    <Services />
-  </section>
+      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+        <Services />
+      </section>
 
-  <section className="py-20 bg-white" data-aos="fade-up">
-    <WhyChooseUs />
-  </section>
+      <section className="py-20 bg-white" data-aos="fade-up">
+        <WhyChooseUs />
+      </section>
 
-  <section className="py-20 b" data-aos="fade-up">
-    <OurProjects />
-  </section>
+      <section className="py-20" data-aos="fade-up">
+        <OurProjects />
+      </section>
 
-  <section className="py-20 bg-white" data-aos="fade-up">
-    <FAQ />
-  </section>
+      <section className="py-20 bg-white" data-aos="fade-up">
+        <FAQ />
+      </section>
 
-  <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
-    <Testimonials />
-  </section>
+      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+        <Testimonials />
+      </section>
 
-  <section className="py-20 bg-white" data-aos="fade-up">
-    <FeaturedProducts />
-  </section>
+      <section className="py-20 bg-white" data-aos="fade-up">
+        <FeaturedProducts />
+      </section>
 
-  <Footer />
-</div>
-
+      <Footer />
+    </div>
   );
 }

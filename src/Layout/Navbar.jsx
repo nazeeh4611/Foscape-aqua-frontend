@@ -312,55 +312,62 @@ const getHeadingColor = () => {
         isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
       } overflow-hidden`}
     >
-      <nav className="px-4 py-4 space-y-4 bg-white border-t border-gray-100">
-        {["Home", "Shop", "Gallery", "Service", "About", "Contact"].map((item) => (
-          <Link
-            key={item}
-            to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
-            onClick={handleMenuItemClick}
-            className="block text-lg font-medium text-gray-700 hover:text-teal-600 transition"
-          >
-            {item}
-          </Link>
-        ))}
+  <nav className="px-4 py-4 space-y-4 bg-white border-t border-gray-100">
+  {["Home", "Shop", "Gallery", "Service", "About", "Contact"].map((item) => (
+    <Link
+      key={item}
+      to={
+        item === "Home"
+          ? "/"
+          : item === "Shop"
+          ? "/categories"   // 👈 Redirect Shop → /categories
+          : `/${item.toLowerCase()}`
+      }
+      onClick={handleMenuItemClick}
+      className="block text-lg font-medium text-gray-700 hover:text-teal-600 transition"
+    >
+      {item}
+    </Link>
+  ))}
 
-        {!isLogged ? (
-          <button
-            onClick={() => {
-              setShowAuthModal(true)
-              handleMenuItemClick()
-            }}
-            className="w-full py-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-lg font-semibold shadow-md hover:scale-105 transition"
-          >
-            Sign In
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <div className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg">
-              <p className="text-sm font-semibold">{user?.name}</p>
-              <p className="text-xs text-teal-600">{user?.email}</p>
-            </div>
+  {!isLogged ? (
+    <button
+      onClick={() => {
+        setShowAuthModal(true);
+        handleMenuItemClick();
+      }}
+      className="w-full py-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-lg font-semibold shadow-md hover:scale-105 transition"
+    >
+      Sign In
+    </button>
+  ) : (
+    <div className="space-y-3">
+      <div className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg">
+        <p className="text-sm font-semibold">{user?.name}</p>
+        <p className="text-xs text-teal-600">{user?.email}</p>
+      </div>
 
-            <Link
-              to="/profile"
-              onClick={handleMenuItemClick}
-              className="block text-lg font-medium hover:text-teal-600 transition"
-            >
-              Profile
-            </Link>
+      <Link
+        to="/profile"
+        onClick={handleMenuItemClick}
+        className="block text-lg font-medium hover:text-teal-600 transition"
+      >
+        Profile
+      </Link>
 
-            <button
-              onClick={() => {
-                handleLogout()
-                handleMenuItemClick()
-              }}
-              className="w-full text-left text-lg hover:text-red-600 transition"
-            >
-              Logout
-            </button>
-          </div>
-        )}
-      </nav>
+      <button
+        onClick={() => {
+          handleLogout();
+          handleMenuItemClick();
+        }}
+        className="w-full text-left text-lg hover:text-red-600 transition"
+      >
+        Logout
+      </button>
+    </div>
+  )}
+</nav>
+
     </div>
   </div>
 </header>

@@ -11,17 +11,16 @@ import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
 // ========== CACHE UTILITY ==========
-const CACHE_KEY = 'aquatic_categories_cache';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-const getCachedCategories = () => {
+const getCachedData = (key) => {
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
+    const cached = localStorage.getItem(key);
     if (!cached) return null;
     
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(key);
       return null;
     }
     return data;
@@ -30,10 +29,10 @@ const getCachedCategories = () => {
   }
 };
 
-const setCachedCategories = (categories) => {
+const setCachedData = (key, data) => {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data: categories,
+    localStorage.setItem(key, JSON.stringify({
+      data: data,
       timestamp: Date.now()
     }));
   } catch (error) {
@@ -51,7 +50,7 @@ const CategoryComponent = () => {
   const fetchCategories = async () => {
     try {
       // Check cache first
-      const cached = getCachedCategories();
+      const cached = getCachedData('aquatic_categories_cache');
       if (cached) {
         setCategories(cached);
         if (cached.length > 0) {
@@ -67,7 +66,7 @@ const CategoryComponent = () => {
       if (response.data.success) {
         const fetchedCategories = response.data.categories;
         setCategories(fetchedCategories);
-        setCachedCategories(fetchedCategories); // Cache the result
+        setCachedData('aquatic_categories_cache', fetchedCategories);
   
         if (fetchedCategories.length > 0) {
           setActiveCategory(fetchedCategories[0]._id);
@@ -470,8 +469,20 @@ const FeaturedProducts = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
+      // Check cache first
+      const cached = getCachedData('aquatic_featured_products');
+      if (cached) {
+        setProducts(cached);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch from API
       const res = await axios.get(`${baseurl}user/products/featured`);
-      if (res.data.success) setProducts(res.data.products);
+      if (res.data.success) {
+        setProducts(res.data.products);
+        setCachedData('aquatic_featured_products', res.data.products);
+      }
     } catch (err) {
       console.log("Error:", err);
     } finally {

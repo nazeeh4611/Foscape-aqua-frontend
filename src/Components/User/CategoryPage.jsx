@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Grid3x3, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Layout/Navbar';
@@ -50,23 +50,37 @@ const HowItWorks = () => {
   );
 };
 
+// Loading skeleton component
+const CategorySkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
+    <div className="h-48 bg-slate-200"></div>
+    <div className="p-5 space-y-3">
+      <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+      <div className="h-4 bg-slate-200 rounded w-full"></div>
+      <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+      <div className="h-10 bg-slate-200 rounded-xl mt-4"></div>
+    </div>
+  </div>
+);
+
 const CategoriesPage = () => {
-  const [Categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchCategories = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`${baseurl}user/category`);
       const data = await response.json();
       if (data.success) {
         setCategories(data.categories);
-        setFilteredCategories(data.categories);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,21 +88,14 @@ const CategoriesPage = () => {
     fetchCategories();
   }, []);
 
-  useEffect(() => {
-    let filtered = Categories;
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(sub => sub.categoryId === selectedCategory);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(sub =>
-        sub.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    setFilteredCategories(filtered);
-  }, [searchQuery, selectedCategory, Categories]);
+  // Memoize filtered categories to avoid recalculation on every render
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery) return categories;
+    
+    return categories.filter(category =>
+      category.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [categories, searchQuery]);
 
   const getGradientColor = (index) => {
     const gradients = [
@@ -112,7 +119,7 @@ const CategoriesPage = () => {
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
         
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+      <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
         <div
     className="absolute inset-0 opacity-10"
     style={{
@@ -162,11 +169,23 @@ const CategoriesPage = () => {
             </div>
 
             <div className="mt-4 text-sm text-slate-600">
-              Showing <span className="font-semibold text-slate-800">{filteredCategories.length}</span> categories
+              {loading ? (
+                <span>Loading categories...</span>
+              ) : (
+                <>
+                  Showing <span className="font-semibold text-slate-800">{filteredCategories.length}</span> categories
+                </>
+              )}
             </div>
           </div>
 
-          {filteredCategories.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <CategorySkeleton key={index} />
+              ))}
+            </div>
+          ) : filteredCategories.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Grid3x3 className="w-12 h-12 text-slate-400" />
@@ -176,19 +195,20 @@ const CategoriesPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCategories.map((Category, index) => {
+              {filteredCategories.map((category, index) => {
                 const gradient = getGradientColor(index);
                 return (
                   <div
-                    key={Category._id}
-                    onClick={() => handleCategoryClick(Category._id)}
+                    key={category._id}
+                    onClick={() => handleCategoryClick(category._id)}
                     className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                   >
                     <div className="relative h-48 flex items-center justify-center bg-slate-50">
                       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
                       <img
-                        src={Category.image}
-                        alt={Category.name}
+                        src={category.image}
+                        alt={category.name}
+                        loading="lazy"
                         className="max-h-40 w-auto object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className={`absolute top-4 right-4 px-3 py-1 bg-gradient-to-r ${gradient} text-white text-xs font-semibold rounded-full shadow-lg`}>
@@ -198,10 +218,10 @@ const CategoriesPage = () => {
 
                     <div className="p-5">
                       <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-[#144E8C] transition-colors line-clamp-1">
-                        {Category.name}
+                        {category.name}
                       </h3>
 
-                      <p className="text-sm text-slate-600 mb-4 line-clamp-2">{Category.description}</p>
+                      <p className="text-sm text-slate-600 mb-4 line-clamp-2">{category.description}</p>
 
                       <button className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-300 text-white bg-gradient-to-r from-[#144E8C] to-[#78CDD1] sm:text-slate-700 sm:bg-slate-50 sm:group-hover:bg-gradient-to-r sm:group-hover:from-[#144E8C] sm:group-hover:to-[#78CDD1] sm:group-hover:text-white">
                         <span className="text-sm">View Products</span>

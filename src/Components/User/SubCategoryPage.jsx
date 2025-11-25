@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Grid3x3, ChevronRight, Search, ArrowLeft } from 'lucide-react';
 import Navbar from '../../Layout/Navbar';
 import Footer from '../../Layout/Footer';
@@ -6,44 +6,58 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { baseurl } from '../../Base/Base';
 
+// Loading skeleton
+const SubCategorySkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
+    <div className="h-48 bg-slate-200"></div>
+    <div className="p-5 space-y-3">
+      <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+      <div className="h-4 bg-slate-200 rounded w-full"></div>
+      <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+      <div className="h-10 bg-slate-200 rounded-xl mt-4"></div>
+    </div>
+  </div>
+);
+
 const SubCategoriesPage = () => {
   const [subCategories, setSubCategories] = useState([]);
-  const [filteredSubCategories, setFilteredSubCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryName, setCategoryName] = useState('');
+  const [loading, setLoading] = useState(true);
   const { categoryId } = useParams();
   const navigate = useNavigate();
 
-  const fetchSubCategories = async (id) => {
+  const fetchSubCategories = useCallback(async (id) => {
     try {
+      setLoading(true);
       const response = await axios.get(`${baseurl}user/subcategory/${id}`);
       if (response.data.success) {
         setSubCategories(response.data.subcategories);
-        setFilteredSubCategories(response.data.subcategories);
         if (response.data.subcategories.length > 0) {
-          setCategoryName(response.data.subcategories[0]?.category?.name || '');
+          setCategoryName(response.data.subcategories[0]?.categoryId?.name || '');
         }
       }
     } catch (error) {
       console.error('Error fetching subcategories:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (categoryId) {
       fetchSubCategories(categoryId);
     }
-  }, [categoryId]);
+  }, [categoryId, fetchSubCategories]);
 
-  useEffect(() => {
-    let filtered = subCategories;
-    if (searchQuery) {
-      filtered = filtered.filter((sub) =>
-        sub.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    setFilteredSubCategories(filtered);
-  }, [searchQuery, subCategories]);
+  // Memoize filtered subcategories
+  const filteredSubCategories = useMemo(() => {
+    if (!searchQuery) return subCategories;
+    
+    return subCategories.filter((sub) =>
+      sub.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [subCategories, searchQuery]);
 
   const getGradientColor = (index) => {
     const gradients = [
@@ -57,13 +71,16 @@ const SubCategoriesPage = () => {
     return gradients[index % gradients.length];
   };
 
+  const handleSubCategoryClick = useCallback((subCategoryId) => {
+    navigate(`/products/subcategory/${subCategoryId}`);
+  }, [navigate]);
+
   return (
     <>
       <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+      <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
         <div
     className="absolute inset-0 opacity-10"
     style={{
@@ -122,9 +139,7 @@ const SubCategoriesPage = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-6 md:px-8 -mt-10 pb-16">
-          {/* Search Bar */}
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-10">
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="flex-grow relative w-full">
@@ -140,16 +155,27 @@ const SubCategoriesPage = () => {
             </div>
 
             <div className="mt-3 text-sm text-slate-600">
-              Showing{' '}
-              <span className="font-semibold text-slate-800">
-                {filteredSubCategories.length}
-              </span>{' '}
-              subcategories
+              {loading ? (
+                <span>Loading subcategories...</span>
+              ) : (
+                <>
+                  Showing{' '}
+                  <span className="font-semibold text-slate-800">
+                    {filteredSubCategories.length}
+                  </span>{' '}
+                  subcategories
+                </>
+              )}
             </div>
           </div>
 
-          {/* Subcategory Cards */}
-          {filteredSubCategories.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <SubCategorySkeleton key={index} />
+              ))}
+            </div>
+          ) : filteredSubCategories.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Grid3x3 className="w-12 h-12 text-slate-400" />
@@ -166,7 +192,7 @@ const SubCategoriesPage = () => {
                 return (
                   <div
                     key={subCategory._id}
-                    onClick={() => navigate(`/products/subcategory/${subCategory._id}`)}
+                    onClick={() => handleSubCategoryClick(subCategory._id)}
                     className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                   >
                     <div className="relative h-48 overflow-hidden">
@@ -176,6 +202,7 @@ const SubCategoriesPage = () => {
                       <img
                         src={subCategory.image}
                         alt={subCategory.name}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       <div
@@ -193,21 +220,7 @@ const SubCategoriesPage = () => {
                         {subCategory.description}
                       </p>
 
-                      <div
-                        className="
-                          w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-300 
-
-                          /* MOBILE (DEFAULT) — always blue */
-                          text-white bg-gradient-to-r from-[#144E8C] to-[#78CDD1]
-
-                          /* DESKTOP Normal */
-                          sm:text-slate-700 sm:bg-slate-50
-
-                          /* DESKTOP Hover */
-                          sm:group-hover:bg-gradient-to-r sm:group-hover:from-[#144E8C] sm:group-hover:to-[#78CDD1]
-                          sm:group-hover:text-white
-                        "
-                      >
+                      <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-300 text-white bg-gradient-to-r from-[#144E8C] to-[#78CDD1] sm:text-slate-700 sm:bg-slate-50 sm:group-hover:bg-gradient-to-r sm:group-hover:from-[#144E8C] sm:group-hover:to-[#78CDD1] sm:group-hover:text-white">
                         <span className="text-sm">View Products</span>
                         <ChevronRight className="w-4 h-4 sm:group-hover:translate-x-1 transition-transform" />
                       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Package,
   ChevronRight,
@@ -18,6 +18,55 @@ import { baseurl } from '../../Base/Base';
 import { useCartWishlist } from '../../Context.js/Cartwishlist';
 import { useAuth } from '../../Context.js/Auth';
 
+// Loading skeleton component
+const ProductSkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
+    <div className="h-64 bg-slate-200"></div>
+    <div className="p-5 space-y-3">
+      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+      <div className="h-3 bg-slate-200 rounded w-full"></div>
+      <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+      <div className="flex justify-between items-center mt-4">
+        <div className="h-8 bg-slate-200 rounded w-20"></div>
+        <div className="h-6 bg-slate-200 rounded w-16"></div>
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1 h-10 bg-slate-200 rounded-xl"></div>
+        <div className="h-10 w-10 bg-slate-200 rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Optimized Image component with lazy loading
+const LazyProductImage = ({ src, alt, className }) => {
+  const [imageSrc, setImageSrc] = useState('/placeholder.jpg');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = src || '/placeholder.jpg';
+    img.onload = () => {
+      setImageSrc(src || '/placeholder.jpg');
+      setIsLoading(false);
+    };
+    img.onerror = () => {
+      setImageSrc('/placeholder.jpg');
+      setIsLoading(false);
+    };
+  }, [src]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className={`${className} transition-all duration-300 ${
+        isLoading ? 'blur-sm' : ''
+      }`}
+    />
+  );
+};
+
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -27,8 +76,10 @@ const ProductsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [subCategoryName, setSubCategoryName] = useState('');
   const [categoryName, setCategoryName] = useState('');
+  
   const { subCategoryId, categoryId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,6 +87,21 @@ const ProductsPage = () => {
   const { isLogged } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useCartWishlist();
 
+  // Memoize gradient colors
+  const gradients = useMemo(() => [
+    'from-[#144E8C] to-[#78CDD1]',
+    'from-[#78C7A2] to-[#99D5C8]',
+    'from-[#78CDD1] to-[#CFEAE3]',
+    'from-[#144E8C] to-[#78C7A2]',
+    'from-[#99D5C8] to-[#78CDD1]',
+    'from-[#78C7A2] to-[#CFEAE3]',
+  ], []);
+
+  const getGradientColor = useCallback((index) => {
+    return gradients[index % gradients.length];
+  }, [gradients]);
+
+  // Parse page from URL on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const pageParam = searchParams.get('page');
@@ -44,49 +110,83 @@ const ProductsPage = () => {
     }
   }, [location.search]);
 
-  const fetchCategories = async () => {
+  // Optimized fetchCategories with caching
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await axios.get(`${baseurl}user/categories-with-subcategories`);
+      // Check sessionStorage cache first
+      const cachedCategories = sessionStorage.getItem('categories');
+      const cacheTime = sessionStorage.getItem('categoriesTime');
+      
+      if (cachedCategories && cacheTime && Date.now() - parseInt(cacheTime) < 300000) {
+        const allCategories = JSON.parse(cachedCategories);
+        setCategories(allCategories);
+        setCategoriesLoading(false);
+        updateCategoryState(allCategories);
+        return;
+      }
+
+      const controller = new AbortController();
+      const response = await axios.get(
+        `${baseurl}user/categories-with-subcategories`,
+        { 
+          signal: controller.signal,
+          timeout: 10000 
+        }
+      );
   
       if (response.data.success) {
         const allCategories = response.data.categories;
         setCategories(allCategories);
-  
-        if (subCategoryId) {
-          const categoryToExpand = allCategories.find(cat =>
-            cat.subcategories?.some(sub => sub._id === subCategoryId)
-          );
-  
-          if (categoryToExpand) {
-            setExpandedCategories({ [categoryToExpand._id]: true });
-            setCategoryName(categoryToExpand.name);
-  
-            const subCat = categoryToExpand.subcategories.find(
-              sub => sub._id === subCategoryId
-            );
-  
-            if (subCat) {
-              setSubCategoryName(subCat.name);
-            }
-          }
-        } 
-        else if (categoryId) {
-          const category = allCategories.find(cat => cat._id === categoryId);
-          if (category) {
-            setCategoryName(category.name);
-            setExpandedCategories({ [categoryId]: true });
-          }
-        } 
-        else {
-          setExpandedCategories({});
-        }
+        
+        // Cache in sessionStorage for 5 minutes
+        sessionStorage.setItem('categories', JSON.stringify(allCategories));
+        sessionStorage.setItem('categoriesTime', Date.now().toString());
+        
+        updateCategoryState(allCategories);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      if (error.name !== 'CanceledError') {
+        console.error("Error fetching categories:", error);
+      }
+    } finally {
+      setCategoriesLoading(false);
     }
-  };
+  }, [subCategoryId, categoryId]);
 
-  const fetchProducts = async (page = 1, subCatId = '', search = '') => {
+  // Separate function to update category state
+  const updateCategoryState = useCallback((allCategories) => {
+    if (subCategoryId) {
+      const categoryToExpand = allCategories.find(cat =>
+        cat.subcategories?.some(sub => sub._id === subCategoryId)
+      );
+
+      if (categoryToExpand) {
+        setExpandedCategories({ [categoryToExpand._id]: true });
+        setCategoryName(categoryToExpand.name);
+
+        const subCat = categoryToExpand.subcategories.find(
+          sub => sub._id === subCategoryId
+        );
+
+        if (subCat) {
+          setSubCategoryName(subCat.name);
+        }
+      }
+    } else if (categoryId) {
+      const category = allCategories.find(cat => cat._id === categoryId);
+      if (category) {
+        setCategoryName(category.name);
+        setExpandedCategories({ [categoryId]: true });
+      }
+    } else {
+      setExpandedCategories({});
+    }
+  }, [subCategoryId, categoryId]);
+
+  // Optimized fetchProducts with request cancellation
+  const fetchProducts = useCallback(async (page = 1, subCatId = '', search = '') => {
+    const controller = new AbortController();
+    
     setLoading(true);
     try {
       const params = {
@@ -104,7 +204,14 @@ const ProductsPage = () => {
         params.search = search;
       }
 
-      const response = await axios.get(`${baseurl}user/products/${apiCategoryId || ''}`, { params });
+      const response = await axios.get(
+        `${baseurl}user/products/${apiCategoryId || ''}`, 
+        { 
+          params,
+          signal: controller.signal,
+          timeout: 10000
+        }
+      );
       
       if (response.data.success) {
         setProducts(response.data.products);
@@ -113,24 +220,32 @@ const ProductsPage = () => {
         setCurrentPage(response.data.currentPage);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      if (error.name !== 'CanceledError') {
+        console.error('Error fetching products:', error);
+        // Show error state to user
+        setProducts([]);
+      }
     } finally {
       setLoading(false);
     }
-  };
 
+    return () => controller.abort();
+  }, [categoryId, productsPerPage]);
+
+  // Initial fetch of categories
   useEffect(() => {
     fetchCategories();
   }, []);
 
+  // Fetch products when URL params change
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const pageParam = searchParams.get('page');
     const page = pageParam ? parseInt(pageParam, 10) : 1;
 
-    if (subCategoryId) {
-      fetchProducts(page, subCategoryId, searchQuery);
-      if (!subCategoryName && categories.length > 0) {
+    // Update category info from cached categories
+    if (categories.length > 0) {
+      if (subCategoryId && !subCategoryName) {
         const categoryWithSub = categories.find(cat =>
           cat.subcategories?.some(sub => sub._id === subCategoryId)
         );
@@ -143,22 +258,26 @@ const ProductsPage = () => {
             setCategoryName(categoryWithSub.name);
           }
         }
-      }
-    } else if (categoryId) {
-      fetchProducts(page, '', searchQuery);
-      if (!categoryName && categories.length > 0) {
+      } else if (categoryId && !categoryName) {
         const category = categories.find(cat => cat._id === categoryId);
         if (category) {
           setCategoryName(category.name);
         }
       }
+    }
+
+    if (subCategoryId) {
+      fetchProducts(page, subCategoryId, searchQuery);
+    } else if (categoryId) {
+      fetchProducts(page, '', searchQuery);
     } else {
       setSubCategoryName('');
       setCategoryName('');
       fetchProducts(page, '', searchQuery);
     }
-  }, [subCategoryId, categoryId, categories, location.search]);
+  }, [subCategoryId, categoryId, location.search, categories]);
   
+  // Debounced search
   useEffect(() => {
     if (searchQuery === '') {
       return;
@@ -174,20 +293,21 @@ const ProductsPage = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  const handleCategoryClick = (category) => {
-    const isCurrentlyExpanded = expandedCategories[category._id];
-    setExpandedCategories({ [category._id]: !isCurrentlyExpanded });
-  };
+  const handleCategoryClick = useCallback((category) => {
+    setExpandedCategories(prev => ({
+      [category._id]: !prev[category._id]
+    }));
+  }, []);
 
-  const handleSubCategoryClick = (subCatId, subCatName, catName, catId) => {
+  const handleSubCategoryClick = useCallback((subCatId, subCatName, catName, catId) => {
     setSubCategoryName(subCatName);
     setCategoryName(catName);
     setExpandedCategories({ [catId]: true });
     setSearchQuery('');
     navigate(`/products/subcategory/${subCatId}?page=1`);
-  };
+  }, [navigate]);
 
-  const handleBreadcrumbCategoryClick = () => {
+  const handleBreadcrumbCategoryClick = useCallback(() => {
     if (categoryName && categories.length > 0) {
       const category = categories.find(cat => cat.name === categoryName);
       if (category) {
@@ -196,17 +316,16 @@ const ProductsPage = () => {
         navigate(`/${category._id}/sub-category?page=1`);
       }
     }
-  };
+  }, [categoryName, categories, navigate]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.set('page', page.toString());
     navigate(`${location.pathname}?${searchParams.toString()}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [location.search, location.pathname, navigate]);
 
-  const handleProductClick = (productId, e) => {
-    // Don't navigate if clicking on the wishlist button
+  const handleProductClick = useCallback((productId, e) => {
     if (e.target.closest('.wishlist-button')) {
       return;
     }
@@ -217,9 +336,9 @@ const ProductsPage = () => {
     }
     
     navigate(`/product/${productId}`);
-  };
+  }, [navigate]);
 
-  const handleWishlistToggle = async (productId, e) => {
+  const handleWishlistToggle = useCallback(async (productId, e) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -233,21 +352,9 @@ const ProductsPage = () => {
     } else {
       await addToWishlist(productId);
     }
-  };
+  }, [isLogged, isInWishlist, removeFromWishlist, addToWishlist, navigate]);
 
-  const getGradientColor = (index) => {
-    const gradients = [
-      'from-[#144E8C] to-[#78CDD1]',
-      'from-[#78C7A2] to-[#99D5C8]',
-      'from-[#78CDD1] to-[#CFEAE3]',
-      'from-[#144E8C] to-[#78C7A2]',
-      'from-[#99D5C8] to-[#78CDD1]',
-      'from-[#78C7A2] to-[#CFEAE3]',
-    ];
-    return gradients[index % gradients.length];
-  };
-
-  const renderPagination = () => {
+  const renderPagination = useMemo(() => {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
@@ -274,90 +381,92 @@ const ProductsPage = () => {
     }
 
     return pages;
-  };
+  }, [currentPage, totalPages, handlePageChange]);
 
   return (
     <>
       <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
-        <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
-        <div
-    className="absolute inset-0 opacity-10"
-    style={{
-      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
-      backgroundSize: '1000px 1000px',
-      backgroundPosition: 'left center',
-      backgroundRepeat: 'repeat-y',
-      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
-      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
-    }}
-  />
-  <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Back</span>
-            </button>
+      
+<div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+<div
+className="absolute inset-0 opacity-10"
+style={{
+backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+backgroundSize: '1000px 1000px',
+backgroundPosition: 'left center',
+backgroundRepeat: 'repeat-y',
+maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+}}
+/>
+<div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
+      onClick={() => navigate(-1)}
+      className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
+    >
+      <ArrowLeft className="w-5 h-5" />
+      <span className="text-sm font-medium">Back</span>
+    </button>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <Package className="w-8 h-8" />
-                  <h1 className="text-3xl sm:text-4xl font-bold">
-                    {subCategoryName || categoryName || 'All Products'}
-                  </h1>
-                </div>
-                <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
-                  Discover our premium collection of quality products
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
-              <span
-                onClick={() => navigate('/')}
-                className="hover:text-white cursor-pointer"
-              >
-                Home
-              </span>
-              <ChevronRight className="w-4 h-4" />
-              <span
-                onClick={() => navigate('/categories')}
-                className="hover:text-white cursor-pointer"
-              >
-                Categories
-              </span>
-              {categoryName && (
-                <>
-                  <ChevronRight className="w-4 h-4" />
-                  <span 
-                    onClick={handleBreadcrumbCategoryClick}
-                    className="text-white hover:text-[#CFEAE3] cursor-pointer"
-                  >
-                    {categoryName}
-                  </span>
-                </>
-              )}
-              {subCategoryName && (
-                <>
-                  <ChevronRight className="w-4 h-4" />
-                  <span className="font-semibold text-white">{subCategoryName}</span>
-                </>
-              )}
-              {!subCategoryName && !categoryName && (
-                <>
-                  <ChevronRight className="w-4 h-4" />
-                  <span className="font-semibold text-white">All Products</span>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <Package className="w-8 h-8" />
+          <h1 className="text-3xl sm:text-4xl font-bold">
+            {subCategoryName || categoryName || 'All Products'}
+          </h1>
         </div>
+        <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
+          Discover our premium collection of quality products
+        </p>
+      </div>
+    </div>
+
+    <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
+      <span
+        onClick={() => navigate('/')}
+        className="hover:text-white cursor-pointer"
+      >
+        Home
+      </span>
+      <ChevronRight className="w-4 h-4" />
+      <span
+        onClick={() => navigate('/categories')}
+        className="hover:text-white cursor-pointer"
+      >
+        Categories
+      </span>
+      {categoryName && (
+        <>
+          <ChevronRight className="w-4 h-4" />
+          <span 
+            onClick={handleBreadcrumbCategoryClick}
+            className="text-white hover:text-[#CFEAE3] cursor-pointer"
+          >
+            {categoryName}
+          </span>
+        </>
+      )}
+      {subCategoryName && (
+        <>
+          <ChevronRight className="w-4 h-4" />
+          <span className="font-semibold text-white">{subCategoryName}</span>
+        </>
+      )}
+      {!subCategoryName && !categoryName && (
+        <>
+          <ChevronRight className="w-4 h-4" />
+          <span className="font-semibold text-white">All Products</span>
+        </>
+      )}
+    </div>
+  </div>
+</div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-8 -mt-10 pb-16">
           <div className="flex flex-col lg:flex-row gap-6">
+            {/* Categories Sidebar */}
             <div className="lg:w-80 flex-shrink-0">
               <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-24">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -366,45 +475,56 @@ const ProductsPage = () => {
                 </h2>
 
                 <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
-                  {categories.map((category) => (
-                    <div key={category._id} className="border-b border-slate-100 last:border-0">
-                      <button
-                        onClick={() => handleCategoryClick(category)}
-                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left hover:bg-slate-50"
-                      >
-                        <span className="font-semibold text-slate-800">
-                          {category.name}
-                        </span>
-                        {expandedCategories[category._id] ? (
-                          <ChevronUp className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                        )}
-                      </button>
-
-                      {expandedCategories[category._id] && (
-                        <div className="ml-4 space-y-1 pb-2">
-                          {category.subcategories?.map((subCat) => (
-                            <div
-                              key={subCat._id}
-                              onClick={() => handleSubCategoryClick(subCat._id, subCat.name, category.name, category._id)}
-                              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm ${
-                                subCategoryId === subCat._id
-                                  ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-md font-medium'
-                                  : 'hover:bg-slate-50 text-slate-600'
-                              }`}
-                            >
-                              {subCat.name}
-                            </div>
-                          ))}
+                  {categoriesLoading ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-10 bg-slate-200 rounded-lg"></div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    categories.map((category) => (
+                      <div key={category._id} className="border-b border-slate-100 last:border-0">
+                        <button
+                          onClick={() => handleCategoryClick(category)}
+                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left hover:bg-slate-50"
+                        >
+                          <span className="font-semibold text-slate-800">
+                            {category.name}
+                          </span>
+                          {expandedCategories[category._id] ? (
+                            <ChevronUp className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                          )}
+                        </button>
+
+                        {expandedCategories[category._id] && (
+                          <div className="ml-4 space-y-1 pb-2">
+                            {category.subcategories?.map((subCat) => (
+                              <div
+                                key={subCat._id}
+                                onClick={() => handleSubCategoryClick(subCat._id, subCat.name, category.name, category._id)}
+                                className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm ${
+                                  subCategoryId === subCat._id
+                                    ? 'bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white shadow-md font-medium'
+                                    : 'hover:bg-slate-50 text-slate-600'
+                                }`}
+                              >
+                                {subCat.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Products Section */}
             <div className="flex-1">
               <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
                 <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -434,9 +554,10 @@ const ProductsPage = () => {
               </div>
 
               {loading ? (
-                <div className="text-center py-16">
-                  <div className="animate-spin w-16 h-16 border-4 border-[#144E8C] border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-slate-600">Loading products...</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[...Array(productsPerPage)].map((_, i) => (
+                    <ProductSkeleton key={i} />
+                  ))}
                 </div>
               ) : products.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-2xl shadow-md">
@@ -464,8 +585,8 @@ const ProductsPage = () => {
                             <div
                               className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity`}
                             ></div>
-                            <img
-                              src={product.images?.[0] || '/placeholder.jpg'}
+                            <LazyProductImage
+                              src={product.images?.[0]}
                               alt={product.name}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             />
@@ -562,7 +683,7 @@ const ProductsPage = () => {
                         >
                           Previous
                         </button>
-                        {renderPagination()}
+                        {renderPagination}
                         <button
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}

@@ -56,10 +56,7 @@ const OurProjects = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-      const response = await axios.get(`${baseurl}user/portfolios/featured`, {
-        signal: controller.signal,
-        headers: { 'Cache-Control': 'no-cache' }
-      });
+      const response = await axios.get(`${baseurl}user/portfolios/featured`);
       console.log(response,"is here")
 
       clearTimeout(timeoutId);

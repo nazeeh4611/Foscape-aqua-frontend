@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin, Facebook, Instagram, Youtube } from 'lucide-react'
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { baseurl } from '../Base/Base';
+import { FaInstagram } from "react-icons/fa";
 
 const Footer = () => {
   const [phone, setPhone] = useState("Loading...");
@@ -105,20 +106,35 @@ const Footer = () => {
 
         {/* Bottom Section */}
         <div className="border-t border-gray-800 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-center">
 
-            <p className="text-gray-400 text-sm">
-              © 2024 Foscape. All rights reserved.
-            </p>
+<p className="text-gray-400 text-sm">
+  © 2024 Foscape. All rights reserved.
+</p>
 
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link to="/privacy-policy" className="text-gray-400 hover:text-white text-sm">Privacy Policy</Link>
-              <Link to="/terms-conditions" className="text-gray-400 hover:text-white text-sm">Terms & Conditions</Link>
-              <Link to="/refund-policy" className="text-gray-400 hover:text-white text-sm">Refund Policy</Link>
-              <Link to="/shipping-policy" className="text-gray-400 hover:text-white text-sm">Shipping Policy</Link>
-            </div>
+<div className="flex space-x-6 mt-4 md:mt-0">
+  <Link to="/privacy-policy" className="text-gray-400 hover:text-white text-sm">Privacy Policy</Link>
+  <Link to="/terms-conditions" className="text-gray-400 hover:text-white text-sm">Terms & Conditions</Link>
+  <Link to="/refund-policy" className="text-gray-400 hover:text-white text-sm">Refund Policy</Link>
+  <Link to="/shipping-policy" className="text-gray-400 hover:text-white text-sm">Shipping Policy</Link>
+</div>
 
-          </div>
+<div className="flex items-center gap-2 mt-4 md:mt-0">
+  <span className="text-gray-400 text-sm">
+    Designed & Developed by FlyHomies Associates
+  </span>
+
+  <a
+    href="https://www.instagram.com/flyhomies_associates/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:opacity-70 transition"
+  >
+    <FaInstagram size={16} className="text-gray-400" />
+  </a>
+</div>
+
+</div>
         </div>
 
       </div>

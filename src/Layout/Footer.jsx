@@ -121,8 +121,6 @@ const Footer = () => {
 
 <div className="flex items-center gap-2 mt-4 md:mt-0">
   <span className="text-gray-400 text-sm">
-    Designed & Developed by FlyHomies Associates
-  </span>
 
   <a
     href="https://www.instagram.com/flyhomies_associates/"
@@ -130,8 +128,10 @@ const Footer = () => {
     rel="noopener noreferrer"
     className="hover:opacity-70 transition"
   >
-    <FaInstagram size={16} className="text-gray-400" />
+    Designed & Developed by FlyHomies Associates
   </a>
+  </span>
+
 </div>
 
 </div>

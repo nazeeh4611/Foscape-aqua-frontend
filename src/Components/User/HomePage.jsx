@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../../Layout/Navbar'
-import Hero from '../../Layout/Hero'
-import Footer from '../../Layout/Footer'
-import { Fish, Package, Truck, Shield, Clock, CheckCircle, ChevronDown, Star, ArrowRight } from 'lucide-react';
+import Navbar from '../../Layout/Navbar';
+import Hero from '../../Layout/Hero';
+import Footer from '../../Layout/Footer';
+import { Fish, Package, Truck, Shield, Clock, CheckCircle, ChevronDown, Star } from 'lucide-react';
 import axios from "axios";
 import { baseurl } from '../../Base/Base';
 import 'aos/dist/aos.css';
@@ -15,12 +15,12 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const getCachedData = (key) => {
   try {
-    const cached = localStorage.getItem(key);
+    const cached = sessionStorage.getItem(key);
     if (!cached) return null;
     
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
       return null;
     }
     return data;
@@ -31,7 +31,7 @@ const getCachedData = (key) => {
 
 const setCachedData = (key, data) => {
   try {
-    localStorage.setItem(key, JSON.stringify({
+    sessionStorage.setItem(key, JSON.stringify({
       data: data,
       timestamp: Date.now()
     }));
@@ -40,48 +40,38 @@ const setCachedData = (key, data) => {
   }
 };
 
-// ========== OPTIMIZED CATEGORY COMPONENT ==========
-const CategoryComponent = () => {
+// ========== SKELETON COMPONENTS ==========
+const HomePageSkeleton = () => (
+  <div className="bg-white">
+    <Navbar />
+    <Hero />
+    <div className="w-full py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="animate-pulse">
+          <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
+          <div className="flex flex-wrap justify-center gap-6 mb-12">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+    <Footer />
+  </div>
+);
+
+// ========== CATEGORY COMPONENT ==========
+const CategoryComponent = ({ categories = [] }) => {
   const [activeCategory, setActiveCategory] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchCategories = async () => {
-    try {
-      // Check cache first
-      const cached = getCachedData('aquatic_categories_cache');
-      if (cached) {
-        setCategories(cached);
-        if (cached.length > 0) {
-          setActiveCategory(cached[0]._id);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Fetch from API
-      const response = await axios.get(`${baseurl}user/category`);
-  
-      if (response.data.success) {
-        const fetchedCategories = response.data.categories;
-        setCategories(fetchedCategories);
-        setCachedData('aquatic_categories_cache', fetchedCategories);
-  
-        if (fetchedCategories.length > 0) {
-          setActiveCategory(fetchedCategories[0]._id);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0]._id);
+    }
+  }, [categories, activeCategory]);
 
   const gradients = useMemo(() => [
     'from-blue-500 to-cyan-500',
@@ -109,22 +99,8 @@ const CategoryComponent = () => {
     [categories, activeCategory]
   );
 
-  if (loading) {
-    return (
-      <div className="w-full py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="animate-pulse">
-            <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
-            <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
-            <div className="flex flex-wrap justify-center gap-6 mb-12">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (categories.length === 0) {
+    return null;
   }
 
   return (
@@ -230,7 +206,7 @@ const CategoryComponent = () => {
   );
 };
 
-// ========== SERVICES COMPONENT (No changes needed) ==========
+// ========== SERVICES COMPONENT ==========
 const Services = () => {
   const navigate = useNavigate();
 
@@ -291,6 +267,7 @@ const Services = () => {
   );
 };
 
+// ========== WHY CHOOSE US COMPONENT ==========
 const WhyChooseUs = () => {
   const reasons = [
     {
@@ -343,6 +320,7 @@ const WhyChooseUs = () => {
   );
 };
 
+// ========== FAQ COMPONENT ==========
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
 
@@ -402,6 +380,7 @@ const FAQ = () => {
   );
 };
 
+// ========== TESTIMONIALS COMPONENT ==========
 const Testimonials = () => {
   const testimonials = [
     {
@@ -455,9 +434,8 @@ const Testimonials = () => {
   );
 };
 
-const FeaturedProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+// ========== FEATURED PRODUCTS COMPONENT ==========
+const FeaturedProducts = ({ products = [] }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const isDraggingRef = useRef(false);
@@ -467,39 +445,12 @@ const FeaturedProducts = () => {
 
   const speed = 1.2;
 
-  const fetchFeaturedProducts = async () => {
-    try {
-      // Check cache first
-      const cached = getCachedData('aquatic_featured_products');
-      if (cached) {
-        setProducts(cached);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch from API
-      const res = await axios.get(`${baseurl}user/products/featured`);
-      if (res.data.success) {
-        setProducts(res.data.products);
-        setCachedData('aquatic_featured_products', res.data.products);
-      }
-    } catch (err) {
-      console.log("Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFeaturedProducts();
-  }, []);
-
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider || products.length === 0) return;
 
     const animate = () => {
-      if (!isDraggingRef.current) {
+      if (!isDraggingRef.current && slider) {
         slider.scrollLeft += speed;
 
         if (slider.scrollLeft >= slider.scrollWidth / 2) {
@@ -516,7 +467,7 @@ const FeaturedProducts = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [products.length, speed]);
+  }, [products.length]);
 
   useEffect(() => {
     const slider = sliderRef.current;
@@ -568,15 +519,8 @@ const FeaturedProducts = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full py-16 flex justify-center">
-        <div className="animate-pulse text-center">
-          <div className="h-10 bg-slate-300 w-40 mx-auto mb-4 rounded"></div>
-          <div className="h-6 bg-slate-200 w-60 mx-auto rounded"></div>
-        </div>
-      </div>
-    );
+  if (products.length === 0) {
+    return null;
   }
 
   return (
@@ -667,15 +611,61 @@ const FeaturedProducts = () => {
   );
 };
 
+// ========== MAIN HOMEPAGE COMPONENT ==========
 export default function HomePage() {
+  const [loading, setLoading] = useState(true);
+  const [homeData, setHomeData] = useState({
+    categories: [],
+    featuredProducts: [],
+    featuredPortfolios: []
+  });
+
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await axios.get(`${baseurl}user/home-data`);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        setHomeData(data);
+        setCachedData('aquatic_home_data', data);
+      }
+    } catch (error) {
+      console.error("Error fetching initial data:", error);
+      setHomeData({
+        categories: [],
+        featuredProducts: [],
+        featuredPortfolios: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const cached = getCachedData('aquatic_home_data');
+    if (cached) {
+      setHomeData(cached);
+      setLoading(false);
+      return;
+    }
+    
+    fetchInitialData();
+  }, []);
+
   useEffect(() => {
     AOS.init({ 
       duration: 600, 
       once: true,
       offset: 50,
-      disable: 'mobile' // Disable on mobile for better performance
+      disable: 'mobile'
     });
   }, []);
+
+  if (loading) {
+    return <HomePageSkeleton />;
+  }
 
   return (
     <div className="bg-white">
@@ -683,7 +673,7 @@ export default function HomePage() {
       <Hero />
 
       <section data-aos="fade-up">
-        <CategoryComponent />
+        <CategoryComponent categories={homeData.categories} />
       </section>
 
       <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
@@ -695,7 +685,7 @@ export default function HomePage() {
       </section>
 
       <section className="py-20" data-aos="fade-up">
-        <OurProjects />
+        <OurProjects portfolios={homeData.featuredPortfolios} />
       </section>
 
       <section className="py-20 bg-white" data-aos="fade-up">
@@ -707,7 +697,7 @@ export default function HomePage() {
       </section>
 
       <section className="py-20 bg-white" data-aos="fade-up">
-        <FeaturedProducts />
+        <FeaturedProducts products={homeData.featuredProducts} />
       </section>
 
       <Footer />

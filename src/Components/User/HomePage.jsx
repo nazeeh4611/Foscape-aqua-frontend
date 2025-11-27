@@ -612,6 +612,7 @@ const FeaturedProducts = ({ products = [] }) => {
 };
 
 // ========== MAIN HOMEPAGE COMPONENT ==========
+
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [homeData, setHomeData] = useState({
@@ -620,19 +621,43 @@ export default function HomePage() {
     featuredPortfolios: []
   });
 
+  // Fetch essential data first (categories + products)
   const fetchInitialData = async () => {
     try {
-      setLoading(true);
+      const cached = getCachedData('aquatic_home_data');
+      if (cached) {
+        setHomeData(cached);
+        setLoading(false);
+        // Still fetch portfolios in background
+        fetchPortfolios();
+        return;
+      }
+
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await axios.get(`${baseurl}user/home-data`, {
+        signal: controller.signal
+      });
       
-      const response = await axios.get(`${baseurl}user/home-data`);
-      
+      clearTimeout(timeoutId);
+
       if (response.data.success) {
         const data = response.data.data;
         setHomeData(data);
         setCachedData('aquatic_home_data', data);
+        
+        // Fetch portfolios in background after initial render
+        fetchPortfolios();
       }
     } catch (error) {
-      console.error("Error fetching initial data:", error);
+      if (error.name === 'AbortError') {
+        console.log('Request timeout - loading with empty data');
+      } else {
+        console.error("Error fetching initial data:", error);
+      }
+      // Don't block - show empty state
       setHomeData({
         categories: [],
         featuredProducts: [],
@@ -643,14 +668,28 @@ export default function HomePage() {
     }
   };
 
-  useEffect(() => {
-    const cached = getCachedData('aquatic_home_data');
-    if (cached) {
-      setHomeData(cached);
-      setLoading(false);
-      return;
+  // Fetch portfolios separately (non-blocking)
+  const fetchPortfolios = async () => {
+    try {
+      const cached = getCachedData('aquatic_portfolios');
+      if (cached) {
+        setHomeData(prev => ({ ...prev, featuredPortfolios: cached }));
+        return;
+      }
+
+      const response = await axios.get(`${baseurl}user/featured-portfolios`);
+      
+      if (response.data.success) {
+        const portfolios = response.data.portfolios;
+        setHomeData(prev => ({ ...prev, featuredPortfolios: portfolios }));
+        setCachedData('aquatic_portfolios', portfolios);
+      }
+    } catch (error) {
+      console.error("Error fetching portfolios:", error);
     }
-    
+  };
+
+  useEffect(() => {
     fetchInitialData();
   }, []);
 
@@ -663,17 +702,31 @@ export default function HomePage() {
     });
   }, []);
 
-  if (loading) {
-    return <HomePageSkeleton />;
-  }
-
+  // Show content immediately, don't wait for all data
   return (
     <div className="bg-white">
       <Navbar />
       <Hero />
 
+      {/* Show categories even while loading */}
       <section data-aos="fade-up">
-        <CategoryComponent categories={homeData.categories} />
+        {loading && homeData.categories.length === 0 ? (
+          <div className="w-full py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="animate-pulse">
+                <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
+                <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
+                <div className="flex flex-wrap justify-center gap-6 mb-12">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <CategoryComponent categories={homeData.categories} />
+        )}
       </section>
 
       <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
@@ -684,9 +737,12 @@ export default function HomePage() {
         <WhyChooseUs />
       </section>
 
-      <section className="py-20" data-aos="fade-up">
-        <OurProjects portfolios={homeData.featuredPortfolios} />
-      </section>
+      {/* Only show portfolios section if data is loaded */}
+      {homeData.featuredPortfolios.length > 0 && (
+        <section className="py-20" data-aos="fade-up">
+          <OurProjects portfolios={homeData.featuredPortfolios} />
+        </section>
+      )}
 
       <section className="py-20 bg-white" data-aos="fade-up">
         <FAQ />

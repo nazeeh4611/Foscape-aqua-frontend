@@ -91,27 +91,6 @@ export const CartWishlistProvider = ({ children }) => {
     }
   };
 
-  const addToCart = async (productId, quantity = 1) => {
-    try {
-      const response = await axios.post(
-        `${baseurl}user/cart/add`,
-        { productId, quantity },
-        getAuthHeaders()
-      );
-      
-      if (response.data.success) {
-        await fetchCart();
-        return { success: true, message: 'Product added to cart' };
-      }
-      return { success: false, message: response.data.message };
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Failed to add to cart' 
-      };
-    }
-  };
 
   const addToCart = async (productId, quantity) => {
   try {

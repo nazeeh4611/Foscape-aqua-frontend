@@ -113,6 +113,27 @@ export const CartWishlistProvider = ({ children }) => {
     }
   };
 
+  const addToCart = async (productId, quantity) => {
+  try {
+    const response = await axios.post(
+      `${baseurl}user/cart/add`,
+      { productId, quantity },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    if (response.data.success) {
+      // Directly update state instead of refetching
+      setCart(response.data.cart);
+      return { success: true };
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Failed to add to cart' 
+    };
+  }
+};
+
   const removeFromCart = async (productId) => {
     try {
       const response = await axios.delete(

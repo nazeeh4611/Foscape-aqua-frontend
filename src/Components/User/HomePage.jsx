@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Layout/Navbar';
 import Hero from '../../Layout/Hero';
 import Footer from '../../Layout/Footer';
-import { Fish, Package, Truck, Shield, Clock, CheckCircle, ChevronDown, Star } from 'lucide-react';
+import { Fish, Package, Truck, Shield, Clock, CheckCircle, ChevronDown, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from "axios";
 import { baseurl } from '../../Base/Base';
 import 'aos/dist/aos.css';
@@ -11,13 +11,12 @@ import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
 // ========== CACHE UTILITY ==========
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 const getCachedData = (key) => {
   try {
     const cached = sessionStorage.getItem(key);
     if (!cached) return null;
-    
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
       sessionStorage.removeItem(key);
@@ -32,7 +31,7 @@ const getCachedData = (key) => {
 const setCachedData = (key, data) => {
   try {
     sessionStorage.setItem(key, JSON.stringify({
-      data: data,
+      data,
       timestamp: Date.now()
     }));
   } catch (error) {
@@ -40,31 +39,28 @@ const setCachedData = (key, data) => {
   }
 };
 
-// ========== SKELETON COMPONENTS ==========
-const HomePageSkeleton = () => (
-  <div className="bg-white">
-    <Navbar />
-    <Hero />
-    <div className="w-full py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="animate-pulse">
-          <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
-          <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
-          <div className="flex flex-wrap justify-center gap-6 mb-12">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
-            ))}
-          </div>
-        </div>
+// ========== CATEGORY SKELETON ==========
+const CategorySkeleton = () => (
+  <div className="w-full py-16 bg-white">
+    <div className="max-w-7xl mx-auto px-4">
+      <div className="text-center mb-12">
+        <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
+        <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
+      </div>
+      <div className="flex flex-wrap justify-center gap-6 mb-12">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl animate-pulse"></div>
+        ))}
       </div>
     </div>
-    <Footer />
   </div>
 );
 
-// ========== CATEGORY COMPONENT ==========
+// ========== OPTIMIZED CATEGORY COMPONENT ==========
 const CategoryComponent = ({ categories = [] }) => {
   const [activeCategory, setActiveCategory] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState({});
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +69,40 @@ const CategoryComponent = ({ categories = [] }) => {
     }
   }, [categories, activeCategory]);
 
+  // Lazy load category description only when selected
+  useEffect(() => {
+    if (!activeCategory) return;
+    
+    const loadCategoryDetails = async () => {
+      // Check if we already have details
+      if (categoryDetails[activeCategory]?.description) return;
+      
+      const cached = getCachedData(`category_detail_${activeCategory}`);
+      if (cached) {
+        setCategoryDetails(prev => ({ ...prev, [activeCategory]: cached }));
+        return;
+      }
+
+      setLoadingDetails(true);
+      try {
+        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, {
+          timeout: 3000
+        });
+        if (response.data.success) {
+          const details = response.data.data;
+          setCategoryDetails(prev => ({ ...prev, [activeCategory]: details }));
+          setCachedData(`category_detail_${activeCategory}`, details);
+        }
+      } catch (error) {
+        console.error('Error loading category details:', error);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+
+    loadCategoryDetails();
+  }, [activeCategory, categoryDetails]);
+
   const gradients = useMemo(() => [
     'from-blue-500 to-cyan-500',
     'from-emerald-500 to-teal-500',
@@ -80,8 +110,6 @@ const CategoryComponent = ({ categories = [] }) => {
     'from-orange-500 to-red-500',
     'from-indigo-500 to-blue-500',
     'from-pink-500 to-rose-500',
-    'from-teal-500 to-cyan-500',
-    'from-amber-500 to-orange-500'
   ], []);
 
   const getGradientColor = (index) => gradients[index % gradients.length];
@@ -90,18 +118,13 @@ const CategoryComponent = ({ categories = [] }) => {
     navigate(`/${categoryId}/sub-category`);
   };
 
-  const handleExploreAll = () => {
-    navigate('/categories');
-  };
+  const activeData = useMemo(() => {
+    const category = categories.find(cat => cat._id === activeCategory);
+    const details = categoryDetails[activeCategory];
+    return category ? { ...category, ...details } : null;
+  }, [categories, activeCategory, categoryDetails]);
 
-  const activeData = useMemo(
-    () => categories.find(cat => cat._id === activeCategory),
-    [categories, activeCategory]
-  );
-
-  if (categories.length === 0) {
-    return null;
-  }
+  if (categories.length === 0) return null;
 
   return (
     <div className="w-full py-16 bg-white">
@@ -177,9 +200,13 @@ const CategoryComponent = ({ categories = [] }) => {
                 <h3 className="text-4xl font-bold text-white mb-4">
                   {activeData.name}
                 </h3>
-                <p className="text-slate-200 mb-6 leading-relaxed text-lg">
-                  {activeData.description}
-                </p>
+                {loadingDetails ? (
+                  <div className="h-6 bg-white/20 rounded w-3/4 mb-6 animate-pulse"></div>
+                ) : (
+                  <p className="text-slate-200 mb-6 leading-relaxed text-lg">
+                    {activeData.description || 'Explore our quality products in this category'}
+                  </p>
+                )}
                 <button 
                   onClick={() => handleViewProducts(activeData._id)}
                   className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-xl font-semibold hover:shadow-2xl transition-all duration-300 hover:scale-105"
@@ -194,7 +221,7 @@ const CategoryComponent = ({ categories = [] }) => {
         
         <div className="text-center">
           <button 
-            onClick={handleExploreAll}
+            onClick={() => navigate('/categories')}
             className="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-br from-slate-900 to-blue-900 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 hover:scale-105"
           >
             <Fish className="w-5 h-5" />
@@ -206,7 +233,7 @@ const CategoryComponent = ({ categories = [] }) => {
   );
 };
 
-// ========== SERVICES COMPONENT ==========
+// ========== STATIC COMPONENTS ==========
 const Services = () => {
   const navigate = useNavigate();
 
@@ -267,29 +294,12 @@ const Services = () => {
   );
 };
 
-// ========== WHY CHOOSE US COMPONENT ==========
 const WhyChooseUs = () => {
   const reasons = [
-    {
-      icon: <CheckCircle className="w-6 h-6" />,
-      title: "Expert Knowledge",
-      description: "Over 15 years of experience in aquatic life care"
-    },
-    {
-      icon: <CheckCircle className="w-6 h-6" />,
-      title: "Best Prices",
-      description: "Competitive pricing without compromising quality"
-    },
-    {
-      icon: <CheckCircle className="w-6 h-6" />,
-      title: "Wide Selection",
-      description: "Extensive range of products for all your needs"
-    },
-    {
-      icon: <CheckCircle className="w-6 h-6" />,
-      title: "Customer First",
-      description: "Your satisfaction is our top priority"
-    }
+    { icon: <CheckCircle className="w-6 h-6" />, title: "Expert Knowledge", description: "Over 15 years of experience in aquatic life care" },
+    { icon: <CheckCircle className="w-6 h-6" />, title: "Best Prices", description: "Competitive pricing without compromising quality" },
+    { icon: <CheckCircle className="w-6 h-6" />, title: "Wide Selection", description: "Extensive range of products for all your needs" },
+    { icon: <CheckCircle className="w-6 h-6" />, title: "Customer First", description: "Your satisfaction is our top priority" }
   ];
 
   return (
@@ -320,31 +330,15 @@ const WhyChooseUs = () => {
   );
 };
 
-// ========== FAQ COMPONENT ==========
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
 
   const faqs = [
-    {
-      question: "What is your shipping policy?",
-      answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe."
-    },
-    {
-      question: "Do you offer a health guarantee?",
-      answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery."
-    },
-    {
-      question: "How do I care for my new fish?",
-      answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions."
-    },
-    {
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay."
-    },
-    {
-      question: "Can I return or exchange products?",
-      answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy."
-    }
+    { question: "What is your shipping policy?", answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe." },
+    { question: "Do you offer a health guarantee?", answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery." },
+    { question: "How do I care for my new fish?", answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions." },
+    { question: "What payment methods do you accept?", answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay." },
+    { question: "Can I return or exchange products?", answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy." }
   ];
 
   return (
@@ -352,9 +346,7 @@ const FAQ = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
-          <p className="text-lg text-slate-600">
-            Find answers to common questions about our products and services
-          </p>
+          <p className="text-lg text-slate-600">Find answers to common questions about our products and services</p>
         </div>
 
         <div className="space-y-4">
@@ -380,27 +372,11 @@ const FAQ = () => {
   );
 };
 
-// ========== TESTIMONIALS COMPONENT ==========
 const Testimonials = () => {
   const testimonials = [
-    {
-      name: "John Smith",
-      role: "Aquarium Enthusiast",
-      content: "Excellent quality products and outstanding customer service. My fish are thriving!",
-      rating: 5
-    },
-    {
-      name: "Sarah Johnson",
-      role: "Pet Store Owner",
-      content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.",
-      rating: 5
-    },
-    {
-      name: "Mike Chen",
-      role: "First-time Buyer",
-      content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.",
-      rating: 5
-    }
+    { name: "John Smith", role: "Aquarium Enthusiast", content: "Excellent quality products and outstanding customer service. My fish are thriving!", rating: 5 },
+    { name: "Sarah Johnson", role: "Pet Store Owner", content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.", rating: 5 },
+    { name: "Mike Chen", role: "First-time Buyer", content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.", rating: 5 }
   ];
 
   return (
@@ -434,174 +410,337 @@ const Testimonials = () => {
   );
 };
 
-// ========== FEATURED PRODUCTS COMPONENT ==========
+// ========== FEATURED PRODUCTS WITH FAST AUTO-SLIDE + DRAGGING ==========
 const FeaturedProducts = ({ products = [] }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
+  const containerRef = useRef(null);
   const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
-  const animationRef = useRef(null);
+  const startPosRef = useRef({ x: 0, scrollLeft: 0 });
+  const autoSlideIntervalRef = useRef(null);
+  const isHoveringRef = useRef(false);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
 
-  const speed = 1.2;
+  // Fast auto-slide configuration
+  const AUTO_SLIDE_SPEED = 2.5; // Pixels per frame (FAST)
+  const AUTO_SLIDE_DELAY = 4000; // Start auto-slide after 4 seconds of inactivity
+  const MANUAL_SCROLL_THRESHOLD = 10; // Minimum drag distance to count as manual scroll
 
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider || products.length === 0) return;
+  // Initialize auto-slide
+  const startAutoSlide = useCallback(() => {
+    if (autoSlideIntervalRef.current) {
+      cancelAnimationFrame(autoSlideIntervalRef.current);
+    }
 
-    const animate = () => {
-      if (!isDraggingRef.current && slider) {
-        slider.scrollLeft += speed;
-
-        if (slider.scrollLeft >= slider.scrollWidth / 2) {
-          slider.scrollLeft = 0;
-        }
+    const slide = () => {
+      const slider = sliderRef.current;
+      if (!slider || isDraggingRef.current || isHoveringRef.current) {
+        autoSlideIntervalRef.current = requestAnimationFrame(slide);
+        return;
       }
-      animationRef.current = requestAnimationFrame(animate);
+
+      slider.scrollLeft += AUTO_SLIDE_SPEED;
+
+      // Check if we've scrolled past the original content
+      if (slider.scrollLeft >= slider.scrollWidth / 2) {
+        // Jump back to start smoothly
+        slider.scrollLeft = 0;
+      }
+
+      updateArrowVisibility();
+      autoSlideIntervalRef.current = requestAnimationFrame(slide);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    autoSlideIntervalRef.current = requestAnimationFrame(slide);
+  }, []);
 
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [products.length]);
+  // Pause auto-slide on hover
+  const handleMouseEnter = useCallback(() => {
+    isHoveringRef.current = true;
+  }, []);
 
-  useEffect(() => {
+  const handleMouseLeave = useCallback(() => {
+    isHoveringRef.current = false;
+  }, []);
+
+  // Update arrow visibility
+  const updateArrowVisibility = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    const start = (e) => {
-      isDraggingRef.current = true;
-      slider.style.scrollBehavior = 'auto';
-      slider.classList.add("grabbing");
-      startXRef.current = e.pageX || e.touches?.[0].pageX;
-      scrollLeftRef.current = slider.scrollLeft;
-    };
+    const isAtStart = slider.scrollLeft <= 10;
+    const isAtEnd = slider.scrollLeft >= slider.scrollWidth - slider.clientWidth - 10;
 
-    const end = () => {
-      isDraggingRef.current = false;
-      slider.classList.remove("grabbing");
-    };
-
-    const move = (e) => {
-      if (!isDraggingRef.current) return;
-      e.preventDefault();
-      const x = e.pageX || e.touches?.[0].pageX;
-      const walk = (x - startXRef.current) * 2.5;
-      slider.scrollLeft = scrollLeftRef.current - walk;
-    };
-
-    slider.addEventListener("mousedown", start, { passive: true });
-    slider.addEventListener("touchstart", start, { passive: true });
-    slider.addEventListener("mousemove", move, { passive: false });
-    slider.addEventListener("touchmove", move, { passive: false });
-    slider.addEventListener("mouseup", end, { passive: true });
-    slider.addEventListener("mouseleave", end, { passive: true });
-    slider.addEventListener("touchend", end, { passive: true });
-
-    return () => {
-      slider.removeEventListener("mousedown", start);
-      slider.removeEventListener("touchstart", start);
-      slider.removeEventListener("mousemove", move);
-      slider.removeEventListener("touchmove", move);
-      slider.removeEventListener("mouseup", end);
-      slider.removeEventListener("mouseleave", end);
-      slider.removeEventListener("touchend", end);
-    };
+    setShowLeftArrow(!isAtStart);
+    setShowRightArrow(!isAtEnd && slider.scrollWidth > slider.clientWidth);
   }, []);
 
-  const handleClick = (id) => {
+  // Manual scroll handlers
+  const handleDragStart = useCallback((e) => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    isDraggingRef.current = true;
+    const x = e.pageX || e.touches[0].pageX;
+    startPosRef.current = { x, scrollLeft: slider.scrollLeft };
+    
+    slider.style.scrollBehavior = 'auto';
+    slider.classList.add('grabbing');
+  }, []);
+
+  const handleDragMove = useCallback((e) => {
+    if (!isDraggingRef.current) return;
+
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    e.preventDefault();
+    const x = e.pageX || e.touches[0].pageX;
+    const walk = (x - startPosRef.current.x);
+    slider.scrollLeft = startPosRef.current.scrollLeft - walk;
+
+    updateArrowVisibility();
+  }, [updateArrowVisibility]);
+
+  const handleDragEnd = useCallback(() => {
+    isDraggingRef.current = false;
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    slider.style.scrollBehavior = 'smooth';
+    slider.classList.remove('grabbing');
+    
+    // Restart auto-slide after delay
+    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
+  }, [startAutoSlide]);
+
+  // Navigation arrows
+  const scrollLeft = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const cardWidth = 320; // w-80 = 320px
+    slider.scrollLeft -= cardWidth;
+    updateArrowVisibility();
+    
+    // Restart auto-slide after manual navigation
+    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
+  }, [startAutoSlide, updateArrowVisibility]);
+
+  const scrollRight = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const cardWidth = 320; // w-80 = 320px
+    slider.scrollLeft += cardWidth;
+    updateArrowVisibility();
+    
+    // Restart auto-slide after manual navigation
+    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
+  }, [startAutoSlide, updateArrowVisibility]);
+
+  // Setup event listeners
+  useEffect(() => {
+    const slider = sliderRef.current;
+    const container = containerRef.current;
+    if (!slider || !container) return;
+
+    // Mouse events
+    slider.addEventListener('mousedown', handleDragStart);
+    slider.addEventListener('mouseenter', handleMouseEnter);
+    slider.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+
+    // Touch events
+    slider.addEventListener('touchstart', handleDragStart, { passive: false });
+    slider.addEventListener('touchmove', handleDragMove, { passive: false });
+    slider.addEventListener('touchend', handleDragEnd);
+    slider.addEventListener('touchcancel', handleDragEnd);
+
+    // Scroll event for arrow visibility
+    slider.addEventListener('scroll', updateArrowVisibility);
+
+    // Initial arrow visibility
+    updateArrowVisibility();
+
+    return () => {
+      slider.removeEventListener('mousedown', handleDragStart);
+      slider.removeEventListener('mouseenter', handleMouseEnter);
+      slider.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+
+      slider.removeEventListener('touchstart', handleDragStart);
+      slider.removeEventListener('touchmove', handleDragMove);
+      slider.removeEventListener('touchend', handleDragEnd);
+      slider.removeEventListener('touchcancel', handleDragEnd);
+
+      slider.removeEventListener('scroll', updateArrowVisibility);
+
+      if (autoSlideIntervalRef.current) {
+        cancelAnimationFrame(autoSlideIntervalRef.current);
+      }
+    };
+  }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateArrowVisibility]);
+
+  // Start auto-slide on mount and when products change
+  useEffect(() => {
+    if (products.length > 0) {
+      // Small delay before starting auto-slide
+      const timer = setTimeout(startAutoSlide, 1000);
+      return () => {
+        clearTimeout(timer);
+        if (autoSlideIntervalRef.current) {
+          cancelAnimationFrame(autoSlideIntervalRef.current);
+        }
+      };
+    }
+  }, [products.length, startAutoSlide]);
+
+  const handleClick = useCallback((id) => {
+    // Only navigate if not dragging
     if (!isDraggingRef.current) {
       navigate(`/product/${id}`);
     }
-  };
+  }, [navigate]);
 
-  if (products.length === 0) {
-    return null;
-  }
+  if (products.length === 0) return null;
+
+  // Duplicate products for infinite scroll effect
+  const duplicatedProducts = [...products, ...products, ...products];
 
   return (
-    <div className="w-full py-8 md:py-14 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 mb-6 md:mb-10 text-center">
-        <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-2">
-          Featured Products
-        </h2>
-        <p className="text-base md:text-lg text-slate-600">
-          Check out our premium selection
-        </p>
+    <div className="w-full py-14 bg-white overflow-hidden" ref={containerRef}>
+      <div className="max-w-7xl mx-auto px-4 mb-10 text-center relative">
+        <h2 className="text-4xl font-bold text-slate-900 mb-2">Featured Products</h2>
+        <p className="text-lg text-slate-600">Check out our premium selection</p>
+
+        {/* Navigation Arrows */}
+        {showLeftArrow && (
+          <button
+            onClick={scrollLeft}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-6 h-6 text-slate-700" />
+          </button>
+        )}
+
+        {showRightArrow && (
+          <button
+            onClick={scrollRight}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-6 h-6 text-slate-700" />
+          </button>
+        )}
       </div>
 
-      <div
-        ref={sliderRef}
-        className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none"
-        style={{ 
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none'
-        }}
-      >
-        {[...products, ...products, ...products].map((product, index) => (
-          <div
-            key={`${product._id}-${index}`}
-            className="flex-shrink-0 w-60 sm:w-64 md:w-72 lg:w-80"
-            onClick={() => handleClick(product._id)}
-          >
-            <div className="bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-xl md:rounded-2xl overflow-hidden">
-              <div className="relative h-48 sm:h-56 md:h-64 bg-slate-200">
-                <img
-                  src={product.images?.[0]}
-                  className="w-full h-full object-cover"
-                  alt={product.name}
-                  loading="lazy"
-                  decoding="async"
-                  draggable="false"
-                />
-                {product.discount > 0 && (
-                  <span className="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white px-2 py-1 md:px-3 text-xs md:text-sm rounded-full font-semibold">
-                    {product.discount}% OFF
-                  </span>
-                )}
-              </div>
-              <div className="p-4 md:p-5">
-                <h3 className="text-lg md:text-xl font-bold truncate mb-1">
-                  {product.name}
-                </h3>
-                <p className="text-sm md:text-base text-slate-600 line-clamp-2 mb-3">
-                  {product.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xl md:text-2xl font-bold text-slate-900">
-                      ₹{product.price}
+      {/* Products Slider */}
+      <div className="relative">
+        <div
+          ref={sliderRef}
+          className="flex gap-6 overflow-x-auto no-scrollbar select-none cursor-grab active:cursor-grabbing"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            padding: '0 1rem'
+          }}
+        >
+          {duplicatedProducts.map((product, index) => (
+            <div
+              key={`${product._id}-${index}`}
+              className="flex-shrink-0 w-80"
+              onClick={() => handleClick(product._id)}
+            >
+              <div className="bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 rounded-2xl overflow-hidden">
+                <div className="relative h-64 bg-slate-100 overflow-hidden">
+                  <img
+                    src={product.images?.[0]}
+                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
+                  />
+                  {product.discount > 0 && (
+                    <span className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 text-sm rounded-full font-semibold shadow-lg">
+                      {product.discount}% OFF
                     </span>
-                    {product.discount > 0 && (
-                      <span className="ml-2 text-xs md:text-sm line-through text-slate-400">
-                        ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
-                      </span>
-                    )}
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="text-xl font-bold truncate mb-2 text-slate-900">{product.name}</h3>
+                  <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+                    {product.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
+                      {product.discount > 0 && (
+                        <span className="ml-2 text-sm line-through text-slate-400">
+                          ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                    <button className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg">
+                      View Details
+                    </button>
                   </div>
-                  <button className="px-4 py-2 md:px-5 bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base rounded-lg transition-colors">
-                    View
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+
+        {/* Gradient fade edges */}
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none z-5"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-5"></div>
+      </div>
+
+      {/* Scroll indicator dots */}
+      <div className="flex justify-center gap-2 mt-8">
+        {products.slice(0, Math.min(5, products.length)).map((_, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              const slider = sliderRef.current;
+              if (slider) {
+                const cardWidth = 320;
+                const gap = 24;
+                slider.scrollLeft = index * (cardWidth + gap);
+                updateArrowVisibility();
+                setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
+              }
+            }}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              index === 0 ? 'bg-blue-600 w-6' : 'bg-slate-300 hover:bg-slate-400'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
         ))}
       </div>
 
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { 
-          display: none; 
+      <style jsx>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+          height: 0;
         }
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+          scroll-behavior: smooth;
         }
-        .grabbing { 
-          cursor: grabbing !important; 
+        .grabbing {
+          cursor: grabbing !important;
+          user-select: none;
         }
         .grabbing * {
           cursor: grabbing !important;
@@ -611,148 +750,120 @@ const FeaturedProducts = ({ products = [] }) => {
   );
 };
 
-// ========== MAIN HOMEPAGE COMPONENT ==========
-
+// ========== MAIN HOMEPAGE ==========
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
   const [homeData, setHomeData] = useState({
     categories: [],
-    featuredProducts: [],
-    featuredPortfolios: []
+    featuredProducts: []
   });
+  const [portfolios, setPortfolios] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch essential data first (categories + products)
-  const fetchInitialData = async () => {
-    try {
+  // Fetch core data ONCE on mount
+  useEffect(() => {
+    const fetchCoreData = async () => {
       const cached = getCachedData('aquatic_home_data');
       if (cached) {
         setHomeData(cached);
         setLoading(false);
-        // Still fetch portfolios in background
-        fetchPortfolios();
         return;
       }
 
-      // Fetch with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await axios.get(`${baseurl}user/home-data`, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (response.data.success) {
-        const data = response.data.data;
-        setHomeData(data);
-        setCachedData('aquatic_home_data', data);
-        
-        // Fetch portfolios in background after initial render
-        fetchPortfolios();
+      try {
+        const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 3000 });
+        if (data.success) {
+          setHomeData(data.data);
+          setCachedData('aquatic_home_data', data.data);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setHomeData({ categories: [], featuredProducts: [] });
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('Request timeout - loading with empty data');
-      } else {
-        console.error("Error fetching initial data:", error);
-      }
-      // Don't block - show empty state
-      setHomeData({
-        categories: [],
-        featuredProducts: [],
-        featuredPortfolios: []
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Fetch portfolios separately (non-blocking)
-  const fetchPortfolios = async () => {
-    try {
+    fetchCoreData();
+  }, []);
+
+  // Lazy load portfolios AFTER initial render
+  useEffect(() => {
+    if (loading) return;
+
+    const fetchPortfolios = async () => {
       const cached = getCachedData('aquatic_portfolios');
       if (cached) {
-        setHomeData(prev => ({ ...prev, featuredPortfolios: cached }));
+        setPortfolios(cached);
         return;
       }
 
-      const response = await axios.get(`${baseurl}user/featured-portfolios`);
-      
-      if (response.data.success) {
-        const portfolios = response.data.portfolios;
-        setHomeData(prev => ({ ...prev, featuredPortfolios: portfolios }));
-        setCachedData('aquatic_portfolios', portfolios);
+      try {
+        const { data } = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 3000 });
+        if (data.success) {
+          setPortfolios(data.portfolios);
+          setCachedData('aquatic_portfolios', data.portfolios);
+        }
+      } catch (error) {
+        console.error("Portfolio error:", error);
       }
-    } catch (error) {
-      console.error("Error fetching portfolios:", error);
-    }
-  };
+    };
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
+    const timer = setTimeout(fetchPortfolios, 500);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     AOS.init({ 
       duration: 600, 
-      once: true,
-      offset: 50,
-      disable: 'mobile'
+      once: true, 
+      offset: 50, 
+      disable: 'mobile' 
     });
   }, []);
 
-  // Show content immediately, don't wait for all data
   return (
     <div className="bg-white">
       <Navbar />
       <Hero />
 
-      {/* Show categories even while loading */}
+      {/* Categories Section - Shows skeleton only while initially loading */}
       <section data-aos="fade-up">
         {loading && homeData.categories.length === 0 ? (
-          <div className="w-full py-16 bg-white">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="animate-pulse">
-                <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
-                <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8"></div>
-                <div className="flex flex-wrap justify-center gap-6 mb-12">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="w-36 h-40 bg-slate-200 rounded-2xl"></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <CategorySkeleton />
         ) : (
           <CategoryComponent categories={homeData.categories} />
         )}
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+      {/* Services Section - Always shows */}
+      <section data-aos="fade-up">
         <Services />
       </section>
 
-      <section className="py-20 bg-white" data-aos="fade-up">
+      {/* Why Choose Us - Always shows */}
+      <section data-aos="fade-up">
         <WhyChooseUs />
       </section>
 
-      {/* Only show portfolios section if data is loaded */}
-      {homeData.featuredPortfolios.length > 0 && (
-        <section className="py-20" data-aos="fade-up">
-          <OurProjects portfolios={homeData.featuredPortfolios} />
+      {/* Portfolios Section - Shows only when data is loaded */}
+      {portfolios.length > 0 && (
+        <section data-aos="fade-up">
+          <OurProjects portfolios={portfolios} />
         </section>
       )}
 
-      <section className="py-20 bg-white" data-aos="fade-up">
+      {/* FAQ - Always shows */}
+      <section data-aos="fade-up">
         <FAQ />
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50" data-aos="fade-up">
+      {/* Testimonials - Always shows */}
+      <section data-aos="fade-up">
         <Testimonials />
       </section>
 
-      <section className="py-20 bg-white" data-aos="fade-up">
+      {/* Featured Products - Shows even if empty */}
+      <section data-aos="fade-up">
         <FeaturedProducts products={homeData.featuredProducts} />
       </section>
 

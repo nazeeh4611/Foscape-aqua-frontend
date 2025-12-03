@@ -1,15 +1,27 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Calendar, MapPin, Sparkles, X, ChevronLeft, ChevronRight, Maximize2, User, Clock } from 'lucide-react';
+import {
+  ArrowRight,
+  Calendar,
+  MapPin,
+  Sparkles,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  User,
+  Clock
+} from 'lucide-react';
 import axios from 'axios';
 import AOS from 'aos';
 import { baseurl } from '../Base/Base';
 
 const CACHE_KEY = 'portfolios_featured';
-const CACHE_DURATION = 15 * 60 * 1000;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
 const getPersistentCache = (key) => {
   try {
+    if (typeof window === 'undefined') return null;
     const cached = sessionStorage.getItem(key);
     if (!cached) return null;
     const { data, timestamp } = JSON.parse(cached);
@@ -25,6 +37,7 @@ const getPersistentCache = (key) => {
 
 const setPersistentCache = (key, data) => {
   try {
+    if (typeof window === 'undefined') return;
     sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (error) {
     console.warn('Cache failed:', error);
@@ -44,40 +57,35 @@ const OurProjects = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Try to get cached data first
+
+      // 1️⃣ Try cache first – show something immediately if available
       const cached = getPersistentCache(CACHE_KEY);
       if (cached && Array.isArray(cached) && cached.length > 0) {
         console.log('Using cached portfolios:', cached.length);
         setPortfolios(cached);
         setLoading(false);
-        return;
       }
 
       console.log('Fetching portfolios from API:', `${baseurl}user/portfolios/featured`);
-      
-      // Fetch from API with timeout
+
+      // 2️⃣ Simple fetch (NO manual 15s abort timeout – this was breaking on mobile / cold starts)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15s
 
       const response = await axios.get(`${baseurl}user/portfolios/featured`, {
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         }
       });
-
-      clearTimeout(timeoutId);
 
       console.log('API Response:', response.data);
 
       if (response.data && response.data.success) {
         const fetchedPortfolios = response.data.portfolios || [];
         console.log('Fetched portfolios count:', fetchedPortfolios.length);
-        
+
         setPortfolios(fetchedPortfolios);
-        
-        // Only cache if we have data
+
         if (fetchedPortfolios.length > 0) {
           setPersistentCache(CACHE_KEY, fetchedPortfolios);
         }
@@ -86,10 +94,10 @@ const OurProjects = () => {
       }
     } catch (error) {
       console.error('Error fetching portfolios:', error);
-      
+
       // Try to use cached data as fallback
       const cached = getPersistentCache(CACHE_KEY);
-      if (cached && Array.isArray(cached)) {
+      if (cached && Array.isArray(cached) && cached.length > 0) {
         console.log('Using cached data as fallback');
         setPortfolios(cached);
       } else {
@@ -139,14 +147,14 @@ const OurProjects = () => {
   const nextImage = (e) => {
     e.stopPropagation();
     if (selectedPortfolio && currentImageIndex < selectedPortfolio.mediaUrls.length - 1) {
-      setCurrentImageIndex(currentImageIndex + 1);
+      setCurrentImageIndex((prev) => prev + 1);
     }
   };
 
   const prevImage = (e) => {
     e.stopPropagation();
     if (currentImageIndex > 0) {
-      setCurrentImageIndex(currentImageIndex - 1);
+      setCurrentImageIndex((prev) => prev - 1);
     }
   };
 
@@ -156,22 +164,22 @@ const OurProjects = () => {
   };
 
   // Loading state
-  if (loading) {
+  if (loading && (!portfolios || portfolios.length === 0)) {
     return (
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="h-8 bg-slate-700 rounded w-48 mx-auto mb-4 animate-pulse"></div>
-            <div className="h-12 bg-slate-700 rounded w-96 mx-auto mb-4 animate-pulse"></div>
-            <div className="h-6 bg-slate-700 rounded w-64 mx-auto animate-pulse"></div>
+            <div className="h-8 bg-slate-700 rounded w-48 mx-auto mb-4 animate-pulse" />
+            <div className="h-12 bg-slate-700 rounded w-96 mx-auto mb-4 animate-pulse" />
+            <div className="h-6 bg-slate-700 rounded w-64 mx-auto animate-pulse" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-slate-800 rounded-2xl overflow-hidden animate-pulse">
-                <div className="h-64 bg-slate-700"></div>
+                <div className="h-64 bg-slate-700" />
                 <div className="p-6">
-                  <div className="h-6 bg-slate-700 rounded mb-3"></div>
-                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                  <div className="h-6 bg-slate-700 rounded mb-3" />
+                  <div className="h-4 bg-slate-700 rounded w-3/4" />
                 </div>
               </div>
             ))}
@@ -182,7 +190,7 @@ const OurProjects = () => {
   }
 
   // Error state with retry
-  if (error) {
+  if (error && (!portfolios || portfolios.length === 0)) {
     return (
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="max-w-2xl mx-auto text-center">
@@ -253,18 +261,25 @@ const OurProjects = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
-                  
+
                   {/* Multiple images indicator */}
                   {portfolio.mediaUrls?.length > 1 && (
                     <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-sm font-medium">
                       +{portfolio.mediaUrls.length - 1} more
                     </div>
                   )}
-                  
+
                   {/* Category Badge */}
-                  <div className={`absolute top-4 left-4 bg-gradient-to-r ${getCategoryGradient(portfolio.category)} px-4 py-1.5 rounded-full`}>
+                  <div
+                    className={`absolute top-4 left-4 bg-gradient-to-r ${getCategoryGradient(
+                      portfolio.category
+                    )} px-4 py-1.5 rounded-full`}
+                  >
                     <span className="text-white text-sm font-semibold">
-                      {portfolio.category?.charAt(0).toUpperCase() + portfolio.category?.slice(1)}
+                      {portfolio.category
+                        ? portfolio.category.charAt(0).toUpperCase() +
+                          portfolio.category.slice(1)
+                        : 'Project'}
                     </span>
                   </div>
                 </div>
@@ -289,7 +304,7 @@ const OurProjects = () => {
                   <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
                     {portfolio.name || 'Untitled Project'}
                   </h3>
-                  
+
                   <p className="text-slate-300 line-clamp-2 mb-4">
                     {portfolio.description || 'No description available'}
                   </p>
@@ -376,7 +391,7 @@ const OurProjects = () => {
               >
                 <Maximize2 className="w-5 h-5" />
               </button>
-              
+
               {selectedPortfolio.mediaUrls?.length > 1 && (
                 <>
                   {currentImageIndex > 0 && (
@@ -418,9 +433,7 @@ const OurProjects = () => {
                             : 'opacity-60 hover:opacity-100 hover:scale-105'
                         }`}
                       />
-                      <p className="text-xs text-slate-400 text-center mt-1">
-                        {index + 1}
-                      </p>
+                      <p className="text-xs text-slate-400 text-center mt-1">{index + 1}</p>
                     </div>
                   ))}
                 </div>
@@ -457,14 +470,17 @@ const OurProjects = () => {
                 {selectedPortfolio.completionDate && (
                   <div className="bg-slate-800 p-4 rounded-xl">
                     <p className="text-sm text-slate-400 mb-1">Completed</p>
-                    <p className="text-white font-semibold">{formatDate(selectedPortfolio.completionDate)}</p>
+                    <p className="text-white font-semibold">
+                      {formatDate(selectedPortfolio.completionDate)}
+                    </p>
                   </div>
                 )}
                 {selectedPortfolio.category && (
                   <div className="bg-slate-800 p-4 rounded-xl">
                     <p className="text-sm text-slate-400 mb-1">Category</p>
                     <p className="text-white font-semibold">
-                      {selectedPortfolio.category?.charAt(0).toUpperCase() + selectedPortfolio.category?.slice(1)}
+                      {selectedPortfolio.category.charAt(0).toUpperCase() +
+                        selectedPortfolio.category.slice(1)}
                     </p>
                   </div>
                 )}

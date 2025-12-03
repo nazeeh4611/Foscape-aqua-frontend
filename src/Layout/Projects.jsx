@@ -229,7 +229,7 @@ const OurProjects = () => {
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-16" data-aos="fade-down">
+          <div className="text-center mb-16" >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 mb-6">
               <Sparkles className="w-4 h-4 text-blue-400" />
               <span className="text-blue-400 font-medium">Featured Works</span>
@@ -248,8 +248,6 @@ const OurProjects = () => {
               <div
                 key={portfolio._id || index}
                 onClick={(e) => openModal(portfolio, e)}
-                data-aos="fade-up"
-                data-aos-delay={index * 100}
                 className="group relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]"
               >
                 {/* Image Container */}
@@ -344,7 +342,7 @@ const OurProjects = () => {
           </div>
 
           {/* View All Button */}
-          <div className="text-center" data-aos="fade-up">
+          <div className="text-center">
             <button
               onClick={() => navigate('/works')}
               className="inline-flex items-center gap-3 px-10 py-4 bg-white text-slate-900 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-300"

@@ -6,13 +6,12 @@ import AOS from 'aos';
 import { baseurl } from '../Base/Base';
 
 const CACHE_KEY = 'portfolios_featured';
-const CACHE_DURATION = 15 * 60 * 1000; 
+const CACHE_DURATION = 15 * 60 * 1000;
 
 const getPersistentCache = (key) => {
   try {
     const cached = sessionStorage.getItem(key);
     if (!cached) return null;
-    
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
       sessionStorage.removeItem(key);
@@ -26,10 +25,7 @@ const getPersistentCache = (key) => {
 
 const setPersistentCache = (key, data) => {
   try {
-    sessionStorage.setItem(key, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
+    sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (error) {
     console.warn('Cache failed:', error);
   }
@@ -38,6 +34,7 @@ const setPersistentCache = (key, data) => {
 const OurProjects = () => {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -46,35 +43,57 @@ const OurProjects = () => {
   const fetchPortfolios = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Try to get cached data first
       const cached = getPersistentCache(CACHE_KEY);
-      if (cached) {
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        console.log('Using cached portfolios:', cached.length);
         setPortfolios(cached);
         setLoading(false);
         return;
       }
 
+      console.log('Fetching portfolios from API:', `${baseurl}user/portfolios/featured`);
+      
+      // Fetch from API with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15s
 
-      const response = await axios.get(`${baseurl}user/portfolios/featured`);
-      console.log(response, "is here");
+      const response = await axios.get(`${baseurl}user/portfolios/featured`, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
       clearTimeout(timeoutId);
 
-      if (response.data.success) {
-        const fetchedPortfolios = response.data.portfolios;
+      console.log('API Response:', response.data);
+
+      if (response.data && response.data.success) {
+        const fetchedPortfolios = response.data.portfolios || [];
+        console.log('Fetched portfolios count:', fetchedPortfolios.length);
+        
         setPortfolios(fetchedPortfolios);
-        setPersistentCache(CACHE_KEY, fetchedPortfolios);
+        
+        // Only cache if we have data
+        if (fetchedPortfolios.length > 0) {
+          setPersistentCache(CACHE_KEY, fetchedPortfolios);
+        }
+      } else {
+        throw new Error('Invalid response format');
       }
     } catch (error) {
-      if (error.name === 'CanceledError') {
-        console.error('Request timeout');
-      } else {
-        console.error('Error fetching portfolios:', error);
-      }
+      console.error('Error fetching portfolios:', error);
+      
+      // Try to use cached data as fallback
       const cached = getPersistentCache(CACHE_KEY);
-      if (cached) {
+      if (cached && Array.isArray(cached)) {
+        console.log('Using cached data as fallback');
         setPortfolios(cached);
+      } else {
+        setError(error.message || 'Failed to load projects');
       }
     } finally {
       setLoading(false);
@@ -136,25 +155,23 @@ const OurProjects = () => {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="w-full py-16 bg-gradient-to-br from-slate-900 to-blue-900">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-block animate-pulse">
-              <div className="h-8 w-48 bg-white/20 rounded-full mb-4 mx-auto"></div>
-              <div className="h-12 w-96 bg-white/10 rounded mx-auto mb-2"></div>
-              <div className="h-6 w-80 bg-white/5 rounded mx-auto"></div>
-            </div>
+      <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="h-8 bg-slate-700 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-12 bg-slate-700 rounded w-96 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-6 bg-slate-700 rounded w-64 mx-auto animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
-                <div className="aspect-[3/2] bg-slate-200"></div>
-                <div className="p-6 space-y-3">
-                  <div className="h-6 bg-slate-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-slate-100 rounded w-full"></div>
-                  <div className="h-4 bg-slate-100 rounded w-5/6"></div>
+              <div key={i} className="bg-slate-800 rounded-2xl overflow-hidden animate-pulse">
+                <div className="h-64 bg-slate-700"></div>
+                <div className="p-6">
+                  <div className="h-6 bg-slate-700 rounded mb-3"></div>
+                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
                 </div>
               </div>
             ))}
@@ -164,120 +181,155 @@ const OurProjects = () => {
     );
   }
 
-  if (portfolios.length === 0) {
-    return null;
+  // Error state with retry
+  if (error) {
+    return (
+      <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-8">
+            <h3 className="text-xl font-semibold text-red-400 mb-3">Failed to Load Projects</h3>
+            <p className="text-slate-400 mb-6">{error}</p>
+            <button
+              onClick={fetchPortfolios}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!portfolios || portfolios.length === 0) {
+    return (
+      <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="bg-slate-800 rounded-xl p-12">
+            <Sparkles className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-semibold text-white mb-3">No Featured Projects Yet</h3>
+            <p className="text-slate-400">Check back soon for our latest work!</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="w-full py-16 bg-gradient-to-br from-slate-900 to-blue-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMS4xLjktMiAyLTJzMiAuOSAyIDItLjkgMi0yIDItMi0uOS0yLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-40"></div>
-
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="text-center mb-12" data-aos="fade-down">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-white">Featured Works</span>
+      <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-16" data-aos="fade-down">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 mb-6">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+              <span className="text-blue-400 font-medium">Featured Works</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
               Our Projects & Works
             </h2>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
               Discover our premium aquatic installations and transformative designs
             </p>
           </div>
 
           {/* Grid Cards Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {portfolios.map((portfolio, index) => (
               <div
-                key={portfolio._id}
-                className="group relative bg-white rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer"
+                key={portfolio._id || index}
                 onClick={(e) => openModal(portfolio, e)}
                 data-aos="fade-up"
                 data-aos-delay={index * 100}
+                className="group relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]"
               >
-                <div className="relative aspect-[3/2] overflow-hidden">
+                {/* Image Container */}
+                <div className="relative h-72 overflow-hidden">
                   <img
-                    src={portfolio.mediaUrls[0]}
-                    alt={portfolio.name}
+                    src={portfolio.mediaUrls?.[0] || '/placeholder.jpg'}
+                    alt={portfolio.name || 'Project'}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
-                    decoding="async"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+                  
                   {/* Multiple images indicator */}
-                  {portfolio.mediaUrls.length > 1 && (
-                    <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-xs font-semibold text-white">
+                  {portfolio.mediaUrls?.length > 1 && (
+                    <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-sm font-medium">
                       +{portfolio.mediaUrls.length - 1} more
                     </div>
                   )}
-
-                  <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient(portfolio.category)} shadow-lg`}>
-                    {portfolio.category?.charAt(0).toUpperCase() + portfolio.category?.slice(1)}
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 right-4 transform translate-y-8 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                    <div className="flex flex-wrap items-center gap-3 text-white text-sm">
-                      {portfolio.location && (
-                        <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">
-                          <MapPin className="w-4 h-4" />
-                          <span>{portfolio.location}</span>
-                        </div>
-                      )}
-                      {portfolio.completionDate && (
-                        <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(portfolio.completionDate).getFullYear()}</span>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Category Badge */}
+                  <div className={`absolute top-4 left-4 bg-gradient-to-r ${getCategoryGradient(portfolio.category)} px-4 py-1.5 rounded-full`}>
+                    <span className="text-white text-sm font-semibold">
+                      {portfolio.category?.charAt(0).toUpperCase() + portfolio.category?.slice(1)}
+                    </span>
                   </div>
                 </div>
 
+                {/* Content */}
                 <div className="p-6">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">
-                    {portfolio.name}
-                  </h3>
+                  <div className="flex items-center gap-4 mb-4 text-sm text-slate-400">
+                    {portfolio.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{portfolio.location}</span>
+                      </div>
+                    )}
+                    {portfolio.completionDate && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(portfolio.completionDate).getFullYear()}</span>
+                      </div>
+                    )}
+                  </div>
 
-                  <p className="text-slate-600 line-clamp-3 mb-4 leading-relaxed">
-                    {portfolio.description}
+                  <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
+                    {portfolio.name || 'Untitled Project'}
+                  </h3>
+                  
+                  <p className="text-slate-300 line-clamp-2 mb-4">
+                    {portfolio.description || 'No description available'}
                   </p>
 
-                  <div className="space-y-2">
+                  {/* Project Meta */}
+                  <div className="space-y-2 mb-4 text-sm">
                     {portfolio.client && (
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        <span className="text-sm text-slate-500">Client</span>
-                        <span className="text-sm font-semibold text-slate-900">{portfolio.client}</span>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <User className="w-4 h-4" />
+                        <span className="font-medium">Client:</span>
+                        <span>{portfolio.client}</span>
                       </div>
                     )}
-
                     {portfolio.duration && (
-                      <div className="flex items-center justify-between py-2 border-t border-slate-100">
-                        <span className="text-sm text-slate-500">Duration</span>
-                        <span className="text-sm font-semibold text-slate-900">{portfolio.duration}</span>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-medium">Duration:</span>
+                        <span>{portfolio.duration}</span>
                       </div>
                     )}
-
                     {portfolio.completionDate && (
-                      <div className="flex items-center justify-between py-2 border-t border-slate-100">
-                        <span className="text-sm text-slate-500">Completed</span>
-                        <span className="text-sm font-semibold text-slate-900">{formatDate(portfolio.completionDate)}</span>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-medium">Completed:</span>
+                        <span>{formatDate(portfolio.completionDate)}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end text-blue-600 font-semibold text-sm group-hover:gap-2 transition-all duration-300">
-                    <span>View Details</span>
-                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
-                  </div>
+                  <button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-105">
+                    View Details
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="text-center" data-aos="fade-up" data-aos-delay="300">
+          {/* View All Button */}
+          <div className="text-center" data-aos="fade-up">
             <button
               onClick={() => navigate('/works')}
               className="inline-flex items-center gap-3 px-10 py-4 bg-white text-slate-900 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-300"
@@ -289,163 +341,141 @@ const OurProjects = () => {
         </div>
       </div>
 
-      {/* Project Detail Modal - Shows all images */}
+      {/* Project Detail Modal */}
       {selectedPortfolio && !fullscreenImage && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={closeModal}>
-          <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-bold text-slate-800">{selectedPortfolio.name}</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={closeModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold text-white">{selectedPortfolio.name}</h2>
               <button
                 onClick={closeModal}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6 text-white" />
               </button>
             </div>
 
-            <div className="p-6">
-              {/* Main Image with Navigation */}
-              <div className="relative mb-6">
-                <img
-                  src={selectedPortfolio.mediaUrls[currentImageIndex]}
-                  alt={selectedPortfolio.name}
-                  className="w-full h-96 object-contain bg-slate-50 rounded-xl cursor-pointer"
-                  onClick={() => openFullscreen(currentImageIndex)}
-                />
-                <button
-                  onClick={() => openFullscreen(currentImageIndex)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
-                >
-                  <Maximize2 className="w-5 h-5 text-slate-700" />
-                </button>
-                
-                {selectedPortfolio.mediaUrls.length > 1 && (
-                  <>
-                    {currentImageIndex > 0 && (
-                      <button
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
-                      >
-                        <ChevronLeft className="w-6 h-6" />
-                      </button>
-                    )}
-                    {currentImageIndex < selectedPortfolio.mediaUrls.length - 1 && (
-                      <button
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
-                      >
-                        <ChevronRight className="w-6 h-6" />
-                      </button>
-                    )}
-                  </>
+            {/* Main Image with Navigation */}
+            <div className="relative">
+              <img
+                src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
+                alt={`${selectedPortfolio.name} - Image ${currentImageIndex + 1}`}
+                className="w-full h-[400px] object-cover"
+                onClick={() => openFullscreen(currentImageIndex)}
+              />
+              <button
+                onClick={() => openFullscreen(currentImageIndex)}
+                className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </button>
+              
+              {selectedPortfolio.mediaUrls?.length > 1 && (
+                <>
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                  )}
+                  {currentImageIndex < selectedPortfolio.mediaUrls.length - 1 && (
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* All Images Thumbnail Strip */}
+            {selectedPortfolio.mediaUrls?.length > 1 && (
+              <div className="p-6 border-b border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-400 mb-3">
+                  All Images ({selectedPortfolio.mediaUrls.length})
+                </h3>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {selectedPortfolio.mediaUrls.map((url, index) => (
+                    <div key={index} className="flex-shrink-0">
+                      <img
+                        src={url}
+                        alt={`Thumbnail ${index + 1}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-32 h-24 object-cover rounded-lg cursor-pointer transition-all ${
+                          currentImageIndex === index
+                            ? 'ring-4 ring-blue-600 scale-105'
+                            : 'opacity-60 hover:opacity-100 hover:scale-105'
+                        }`}
+                      />
+                      <p className="text-xs text-slate-400 text-center mt-1">
+                        {index + 1}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Project Details */}
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Project Description</h3>
+                <p className="text-slate-300">{selectedPortfolio.description}</p>
+              </div>
+
+              {/* Project Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedPortfolio.client && (
+                  <div className="bg-slate-800 p-4 rounded-xl">
+                    <p className="text-sm text-slate-400 mb-1">Client</p>
+                    <p className="text-white font-semibold">{selectedPortfolio.client}</p>
+                  </div>
+                )}
+                {selectedPortfolio.location && (
+                  <div className="bg-slate-800 p-4 rounded-xl">
+                    <p className="text-sm text-slate-400 mb-1">Location</p>
+                    <p className="text-white font-semibold">{selectedPortfolio.location}</p>
+                  </div>
+                )}
+                {selectedPortfolio.duration && (
+                  <div className="bg-slate-800 p-4 rounded-xl">
+                    <p className="text-sm text-slate-400 mb-1">Duration</p>
+                    <p className="text-white font-semibold">{selectedPortfolio.duration}</p>
+                  </div>
+                )}
+                {selectedPortfolio.completionDate && (
+                  <div className="bg-slate-800 p-4 rounded-xl">
+                    <p className="text-sm text-slate-400 mb-1">Completed</p>
+                    <p className="text-white font-semibold">{formatDate(selectedPortfolio.completionDate)}</p>
+                  </div>
+                )}
+                {selectedPortfolio.category && (
+                  <div className="bg-slate-800 p-4 rounded-xl">
+                    <p className="text-sm text-slate-400 mb-1">Category</p>
+                    <p className="text-white font-semibold">
+                      {selectedPortfolio.category?.charAt(0).toUpperCase() + selectedPortfolio.category?.slice(1)}
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {/* All Images Thumbnail Strip */}
-              {selectedPortfolio.mediaUrls.length > 1 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-slate-800 mb-3">All Images ({selectedPortfolio.mediaUrls.length})</h3>
-                  <div className="flex gap-3 overflow-x-auto pb-4">
-                    {selectedPortfolio.mediaUrls.map((url, index) => (
-                      <div key={index} className="relative flex-shrink-0">
-                        <img
-                          src={url}
-                          alt={`${selectedPortfolio.name} ${index + 1}`}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`w-32 h-24 object-cover rounded-lg cursor-pointer transition-all ${
-                            currentImageIndex === index ? 'ring-4 ring-blue-600 scale-105' : 'opacity-60 hover:opacity-100 hover:scale-105'
-                          }`}
-                        />
-                        <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center text-xs text-white">
-                          {index + 1}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {selectedPortfolio.features && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Key Features</h3>
+                  <p className="text-slate-300">{selectedPortfolio.features}</p>
                 </div>
               )}
-
-              {/* Project Details */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-3">Project Description</h3>
-                  <p className="text-slate-700 leading-relaxed">{selectedPortfolio.description}</p>
-                </div>
-
-                {/* Project Info Grid */}
-                <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
-                  {selectedPortfolio.client && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Client</p>
-                        <p className="font-semibold text-slate-800">{selectedPortfolio.client}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPortfolio.location && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Location</p>
-                        <p className="font-semibold text-slate-800">{selectedPortfolio.location}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPortfolio.duration && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Duration</p>
-                        <p className="font-semibold text-slate-800">{selectedPortfolio.duration}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPortfolio.completionDate && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Completed</p>
-                        <p className="font-semibold text-slate-800">{formatDate(selectedPortfolio.completionDate)}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPortfolio.category && (
-                    <div className="md:col-span-2">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <div className="w-5 h-5 text-white font-bold">C</div>
-                        </div>
-                        <div>
-                          <p className="text-sm text-slate-500">Category</p>
-                          <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${getCategoryGradient(selectedPortfolio.category)} mt-1`}>
-                            {selectedPortfolio.category?.charAt(0).toUpperCase() + selectedPortfolio.category?.slice(1)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {selectedPortfolio.features && (
-                  <div className="pt-4 border-t border-slate-200">
-                    <h3 className="font-semibold text-slate-800 mb-2">Key Features</h3>
-                    <p className="text-slate-600">{selectedPortfolio.features}</p>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -453,46 +483,49 @@ const OurProjects = () => {
 
       {/* Fullscreen Image View */}
       {fullscreenImage && selectedPortfolio && (
-        <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center" onClick={closeFullscreen}>
+        <div
+          className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
+          onClick={closeFullscreen}
+        >
           <button
             onClick={closeFullscreen}
-            className="absolute top-6 right-6 w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center z-10 transition-all"
+            className="absolute top-4 right-4 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all z-10"
           >
             <X className="w-6 h-6 text-white" />
           </button>
 
-          <div className="relative w-full h-full flex items-center justify-center p-4">
-            <img
-              src={selectedPortfolio.mediaUrls[currentImageIndex]}
-              alt={selectedPortfolio.name}
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+          <img
+            src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
+            alt={selectedPortfolio.name}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
 
-            {selectedPortfolio.mediaUrls.length > 1 && (
-              <>
-                {currentImageIndex > 0 && (
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
-                  >
-                    <ChevronLeft className="w-8 h-8 text-white" />
-                  </button>
-                )}
-                {currentImageIndex < selectedPortfolio.mediaUrls.length - 1 && (
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
-                  >
-                    <ChevronRight className="w-8 h-8 text-white" />
-                  </button>
-                )}
-              </>
-            )}
+          {selectedPortfolio.mediaUrls?.length > 1 && (
+            <>
+              {currentImageIndex > 0 && (
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all"
+                >
+                  <ChevronLeft className="w-6 h-6 text-white" />
+                </button>
+              )}
+              {currentImageIndex < selectedPortfolio.mediaUrls.length - 1 && (
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all"
+                >
+                  <ChevronRight className="w-6 h-6 text-white" />
+                </button>
+              )}
+            </>
+          )}
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full">
-              {currentImageIndex + 1} / {selectedPortfolio.mediaUrls.length}
-            </div>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full">
+            <span className="text-white text-sm font-medium">
+              {currentImageIndex + 1} / {selectedPortfolio.mediaUrls?.length}
+            </span>
           </div>
         </div>
       )}

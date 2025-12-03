@@ -377,12 +377,13 @@ const OurProjects = () => {
 
             {/* Main Image with Navigation */}
             <div className="relative">
-              <img
-                src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
-                alt={`${selectedPortfolio.name} - Image ${currentImageIndex + 1}`}
-                className="w-full h-[400px] object-cover"
-                onClick={() => openFullscreen(currentImageIndex)}
-              />
+            <img
+            src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
+            alt={`${selectedPortfolio.name} - Image ${currentImageIndex + 1}`}
+            className="w-full max-h-[70vh] object-contain bg-black"
+            onClick={() => openFullscreen(currentImageIndex)}
+          />
+
               <button
                 onClick={() => openFullscreen(currentImageIndex)}
                 className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-all"

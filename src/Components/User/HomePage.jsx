@@ -10,16 +10,15 @@ import 'aos/dist/aos.css';
 import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
-// ========== CACHE UTILITY ==========
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION = 30 * 60 * 1000;
 
 const getCachedData = (key) => {
   try {
-    const cached = sessionStorage.getItem(key);
+    const cached = localStorage.getItem(key);
     if (!cached) return null;
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
-      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
       return null;
     }
     return data;
@@ -30,7 +29,7 @@ const getCachedData = (key) => {
 
 const setCachedData = (key, data) => {
   try {
-    sessionStorage.setItem(key, JSON.stringify({
+    localStorage.setItem(key, JSON.stringify({
       data,
       timestamp: Date.now()
     }));
@@ -39,7 +38,6 @@ const setCachedData = (key, data) => {
   }
 };
 
-// ========== CATEGORY SKELETON ==========
 const CategorySkeleton = () => (
   <div className="w-full py-16 bg-white">
     <div className="max-w-7xl mx-auto px-4">
@@ -56,7 +54,6 @@ const CategorySkeleton = () => (
   </div>
 );
 
-// ========== OPTIMIZED CATEGORY COMPONENT ==========
 const CategoryComponent = ({ categories = [] }) => {
   const [activeCategory, setActiveCategory] = useState('');
   const [categoryDetails, setCategoryDetails] = useState({});
@@ -69,12 +66,10 @@ const CategoryComponent = ({ categories = [] }) => {
     }
   }, [categories, activeCategory]);
 
-  // Lazy load category description only when selected
   useEffect(() => {
     if (!activeCategory) return;
     
     const loadCategoryDetails = async () => {
-      // Check if we already have details
       if (categoryDetails[activeCategory]?.description) return;
       
       const cached = getCachedData(`category_detail_${activeCategory}`);
@@ -86,7 +81,7 @@ const CategoryComponent = ({ categories = [] }) => {
       setLoadingDetails(true);
       try {
         const response = await axios.get(`${baseurl}user/category/${activeCategory}`, {
-          timeout: 3000
+          timeout: 1500
         });
         if (response.data.success) {
           const details = response.data.data;
@@ -233,7 +228,6 @@ const CategoryComponent = ({ categories = [] }) => {
   );
 };
 
-// ========== STATIC COMPONENTS ==========
 const Services = () => {
   const navigate = useNavigate();
 
@@ -410,7 +404,6 @@ const Testimonials = () => {
   );
 };
 
-// ========== FEATURED PRODUCTS WITH FAST AUTO-SLIDE + DRAGGING ==========
 const FeaturedProducts = ({ products = [] }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
@@ -422,12 +415,9 @@ const FeaturedProducts = ({ products = [] }) => {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
 
-  // Fast auto-slide configuration
-  const AUTO_SLIDE_SPEED = 2.5; // Pixels per frame (FAST)
-  const AUTO_SLIDE_DELAY = 4000; // Start auto-slide after 4 seconds of inactivity
-  const MANUAL_SCROLL_THRESHOLD = 10; // Minimum drag distance to count as manual scroll
+  const AUTO_SLIDE_SPEED = 2.5;
+  const AUTO_SLIDE_DELAY = 4000;
 
-  // Initialize auto-slide
   const startAutoSlide = useCallback(() => {
     if (autoSlideIntervalRef.current) {
       cancelAnimationFrame(autoSlideIntervalRef.current);
@@ -442,9 +432,7 @@ const FeaturedProducts = ({ products = [] }) => {
 
       slider.scrollLeft += AUTO_SLIDE_SPEED;
 
-      // Check if we've scrolled past the original content
       if (slider.scrollLeft >= slider.scrollWidth / 2) {
-        // Jump back to start smoothly
         slider.scrollLeft = 0;
       }
 
@@ -455,7 +443,6 @@ const FeaturedProducts = ({ products = [] }) => {
     autoSlideIntervalRef.current = requestAnimationFrame(slide);
   }, []);
 
-  // Pause auto-slide on hover
   const handleMouseEnter = useCallback(() => {
     isHoveringRef.current = true;
   }, []);
@@ -464,7 +451,6 @@ const FeaturedProducts = ({ products = [] }) => {
     isHoveringRef.current = false;
   }, []);
 
-  // Update arrow visibility
   const updateArrowVisibility = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -476,7 +462,6 @@ const FeaturedProducts = ({ products = [] }) => {
     setShowRightArrow(!isAtEnd && slider.scrollWidth > slider.clientWidth);
   }, []);
 
-  // Manual scroll handlers
   const handleDragStart = useCallback((e) => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -511,20 +496,17 @@ const FeaturedProducts = ({ products = [] }) => {
     slider.style.scrollBehavior = 'smooth';
     slider.classList.remove('grabbing');
     
-    // Restart auto-slide after delay
     setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
   }, [startAutoSlide]);
 
-  // Navigation arrows
   const scrollLeft = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    const cardWidth = 320; // w-80 = 320px
+    const cardWidth = 320;
     slider.scrollLeft -= cardWidth;
     updateArrowVisibility();
     
-    // Restart auto-slide after manual navigation
     setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
   }, [startAutoSlide, updateArrowVisibility]);
 
@@ -532,21 +514,18 @@ const FeaturedProducts = ({ products = [] }) => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    const cardWidth = 320; // w-80 = 320px
+    const cardWidth = 320;
     slider.scrollLeft += cardWidth;
     updateArrowVisibility();
     
-    // Restart auto-slide after manual navigation
     setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
   }, [startAutoSlide, updateArrowVisibility]);
 
-  // Setup event listeners
   useEffect(() => {
     const slider = sliderRef.current;
     const container = containerRef.current;
     if (!slider || !container) return;
 
-    // Mouse events
     slider.addEventListener('mousedown', handleDragStart);
     slider.addEventListener('mouseenter', handleMouseEnter);
     slider.addEventListener('mouseleave', handleMouseLeave);
@@ -555,16 +534,13 @@ const FeaturedProducts = ({ products = [] }) => {
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
 
-    // Touch events
     slider.addEventListener('touchstart', handleDragStart, { passive: false });
     slider.addEventListener('touchmove', handleDragMove, { passive: false });
     slider.addEventListener('touchend', handleDragEnd);
     slider.addEventListener('touchcancel', handleDragEnd);
 
-    // Scroll event for arrow visibility
     slider.addEventListener('scroll', updateArrowVisibility);
 
-    // Initial arrow visibility
     updateArrowVisibility();
 
     return () => {
@@ -589,10 +565,8 @@ const FeaturedProducts = ({ products = [] }) => {
     };
   }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateArrowVisibility]);
 
-  // Start auto-slide on mount and when products change
   useEffect(() => {
     if (products.length > 0) {
-      // Small delay before starting auto-slide
       const timer = setTimeout(startAutoSlide, 1000);
       return () => {
         clearTimeout(timer);
@@ -604,7 +578,6 @@ const FeaturedProducts = ({ products = [] }) => {
   }, [products.length, startAutoSlide]);
 
   const handleClick = useCallback((id) => {
-    // Only navigate if not dragging
     if (!isDraggingRef.current) {
       navigate(`/product/${id}`);
     }
@@ -612,7 +585,6 @@ const FeaturedProducts = ({ products = [] }) => {
 
   if (products.length === 0) return null;
 
-  // Duplicate products for infinite scroll effect
   const duplicatedProducts = [...products, ...products, ...products];
 
   return (
@@ -621,7 +593,6 @@ const FeaturedProducts = ({ products = [] }) => {
         <h2 className="text-4xl font-bold text-slate-900 mb-2">Featured Products</h2>
         <p className="text-lg text-slate-600">Check out our premium selection</p>
 
-        {/* Navigation Arrows */}
         {showLeftArrow && (
           <button
             onClick={scrollLeft}
@@ -643,7 +614,6 @@ const FeaturedProducts = ({ products = [] }) => {
         )}
       </div>
 
-      {/* Products Slider */}
       <div className="relative">
         <div
           ref={sliderRef}
@@ -700,12 +670,10 @@ const FeaturedProducts = ({ products = [] }) => {
           ))}
         </div>
 
-        {/* Gradient fade edges */}
         <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none z-5"></div>
         <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-5"></div>
       </div>
 
-      {/* Scroll indicator dots */}
       <div className="flex justify-center gap-2 mt-8">
         {products.slice(0, Math.min(5, products.length)).map((_, index) => (
           <button
@@ -750,7 +718,6 @@ const FeaturedProducts = ({ products = [] }) => {
   );
 };
 
-// ========== MAIN HOMEPAGE ==========
 export default function HomePage() {
   const [homeData, setHomeData] = useState({
     categories: [],
@@ -758,37 +725,59 @@ export default function HomePage() {
   });
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Fetch core data ONCE on mount
   useEffect(() => {
-    const fetchCoreData = async () => {
-      const cached = getCachedData('aquatic_home_data');
+    const fetchEssentialData = async () => {
+      const cached = getCachedData('aquatic_home_essential');
+      
       if (cached) {
         setHomeData(cached);
+        setInitialLoadComplete(true);
+        
+        setTimeout(async () => {
+          try {
+            const { data } = await axios.get(`${baseurl}user/home-data`, {
+              timeout: 2000
+            });
+            if (data.success) {
+              setHomeData(data.data);
+              setCachedData('aquatic_home_essential', data.data);
+            }
+          } catch (err) {
+          }
+        }, 0);
+        
         setLoading(false);
         return;
       }
 
       try {
-        const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 3000 });
-        if (data.success) {
-          setHomeData(data.data);
-          setCachedData('aquatic_home_data', data.data);
+        const response = await axios.get(`${baseurl}user/home-data`, {
+          timeout: 1500
+        });
+        
+        if (response.data.success) {
+          setHomeData(response.data.data);
+          setCachedData('aquatic_home_essential', response.data.data);
+          setInitialLoadComplete(true);
         }
       } catch (error) {
-        console.error("Error:", error);
         setHomeData({ categories: [], featuredProducts: [] });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCoreData();
+    fetchEssentialData();
+
+    if (performance.mark) {
+      performance.mark('homepage_start');
+    }
   }, []);
 
-  // Lazy load portfolios AFTER initial render
   useEffect(() => {
-    if (loading) return;
+    if (!initialLoadComplete) return;
 
     const fetchPortfolios = async () => {
       const cached = getCachedData('aquatic_portfolios');
@@ -798,19 +787,20 @@ export default function HomePage() {
       }
 
       try {
-        const { data } = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 3000 });
-        if (data.success) {
-          setPortfolios(data.portfolios);
-          setCachedData('aquatic_portfolios', data.portfolios);
+        const response = await axios.get(`${baseurl}user/featured-portfolios`, {
+          timeout: 1500
+        });
+        if (response.data.success) {
+          setPortfolios(response.data.portfolios);
+          setCachedData('aquatic_portfolios', response.data.portfolios);
         }
       } catch (error) {
-        console.error("Portfolio error:", error);
       }
     };
 
     const timer = setTimeout(fetchPortfolios, 500);
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [initialLoadComplete]);
 
   useEffect(() => {
     AOS.init({ 
@@ -821,12 +811,27 @@ export default function HomePage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (homeData.categories[0]?.image) {
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.as = 'image';
+      preloadLink.href = homeData.categories[0].image;
+      document.head.appendChild(preloadLink);
+      
+      return () => {
+        if (preloadLink.parentNode) {
+          preloadLink.parentNode.removeChild(preloadLink);
+        }
+      };
+    }
+  }, [homeData.categories]);
+
   return (
     <div className="bg-white">
       <Navbar />
       <Hero />
 
-      {/* Categories Section - Shows skeleton only while initially loading */}
       <section data-aos="fade-up">
         {loading && homeData.categories.length === 0 ? (
           <CategorySkeleton />
@@ -835,34 +840,28 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Services Section - Always shows */}
       <section data-aos="fade-up">
         <Services />
       </section>
 
-      {/* Why Choose Us - Always shows */}
       <section data-aos="fade-up">
         <WhyChooseUs />
       </section>
 
-      {/* Portfolios Section - Shows only when data is loaded */}
       {portfolios.length > 0 && (
         <section data-aos="fade-up">
           <OurProjects portfolios={portfolios} />
         </section>
       )}
 
-      {/* FAQ - Always shows */}
       <section data-aos="fade-up">
         <FAQ />
       </section>
 
-      {/* Testimonials - Always shows */}
       <section data-aos="fade-up">
         <Testimonials />
       </section>
 
-      {/* Featured Products - Shows even if empty */}
       <section data-aos="fade-up">
         <FeaturedProducts products={homeData.featuredProducts} />
       </section>

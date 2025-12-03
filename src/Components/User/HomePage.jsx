@@ -726,6 +726,7 @@ export default function HomePage() {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [showPortfolioSkeleton, setShowPortfolioSkeleton] = useState(true);
 
   useEffect(() => {
     const fetchEssentialData = async () => {
@@ -778,28 +779,36 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!initialLoadComplete) return;
-
+  
     const fetchPortfolios = async () => {
       const cached = getCachedData('aquatic_portfolios');
+      
+      // INSTANT LOAD: Show skeleton immediately
+      setShowPortfolioSkeleton(false);
+      
       if (cached) {
         setPortfolios(cached);
         return;
       }
-
+  
       try {
         const response = await axios.get(`${baseurl}user/featured-portfolios`, {
-          timeout: 1500
+          timeout: 1000, // Reduced timeout
+          headers: {
+            'X-Priority': 'low'
+          }
         });
+        
         if (response.data.success) {
-          setPortfolios(response.data.portfolios);
+          setPortfolios(response.data.portfolios || []);
           setCachedData('aquatic_portfolios', response.data.portfolios);
         }
       } catch (error) {
+        setPortfolios([]);
       }
     };
-
-    const timer = setTimeout(fetchPortfolios, 500);
-    return () => clearTimeout(timer);
+  
+    fetchPortfolios();
   }, [initialLoadComplete]);
 
   useEffect(() => {
@@ -826,6 +835,22 @@ export default function HomePage() {
       };
     }
   }, [homeData.categories]);
+  useEffect(() => {
+    if (portfolios.length > 0) {
+      const preloadImages = () => {
+        portfolios.slice(0, 2).forEach(portfolio => {
+          if (portfolio.mediaUrls?.[0]) {
+            const img = new Image();
+            img.src = portfolio.mediaUrls[0];
+            img.loading = 'eager';
+          }
+        });
+      };
+      
+      const timer = setTimeout(preloadImages, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [portfolios]);
 
   return (
     <div className="bg-white">
@@ -848,11 +873,21 @@ export default function HomePage() {
         <WhyChooseUs />
       </section>
 
-      {portfolios.length > 0 && (
-        <section data-aos="fade-up">
-          <OurProjects portfolios={portfolios} />
-        </section>
-      )}
+      {showPortfolioSkeleton ? (
+  <div className="w-full py-16 bg-white">
+    <div className="max-w-7xl mx-auto px-4">
+      <div className="text-center mb-12">
+        <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
+        <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
+      </div>
+      <div className="h-[400px] bg-slate-200 rounded-3xl animate-pulse"></div>
+    </div>
+  </div>
+) : portfolios.length > 0 ? (
+  <section data-aos="fade-up">
+    <OurProjects portfolios={portfolios} />
+  </section>
+) : null}
 
       <section data-aos="fade-up">
         <FAQ />

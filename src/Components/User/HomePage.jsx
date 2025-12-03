@@ -728,6 +728,12 @@ export default function HomePage() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showPortfolioSkeleton, setShowPortfolioSkeleton] = useState(true);
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('Base URL:', baseurl);
+    console.log('Portfolio API URL:', `${baseurl}user/featured-portfolios`);
+  }, []);
+
   useEffect(() => {
     const fetchEssentialData = async () => {
       const cached = getCachedData('aquatic_home_essential');
@@ -746,6 +752,7 @@ export default function HomePage() {
               setCachedData('aquatic_home_essential', data.data);
             }
           } catch (err) {
+            console.log('Background refresh failed');
           }
         }, 0);
         
@@ -764,6 +771,7 @@ export default function HomePage() {
           setInitialLoadComplete(true);
         }
       } catch (error) {
+        console.error('Home data fetch failed:', error.message);
         setHomeData({ categories: [], featuredProducts: [] });
       } finally {
         setLoading(false);
@@ -783,7 +791,6 @@ export default function HomePage() {
     const fetchPortfolios = async () => {
       const cached = getCachedData('aquatic_portfolios');
       
-      // INSTANT LOAD: Show skeleton immediately
       setShowPortfolioSkeleton(false);
       
       if (cached) {
@@ -792,11 +799,9 @@ export default function HomePage() {
       }
   
       try {
+        console.log('Fetching portfolios from:', `${baseurl}user/featured-portfolios`);
         const response = await axios.get(`${baseurl}user/featured-portfolios`, {
-          timeout: 1000, // Reduced timeout
-          headers: {
-            'X-Priority': 'low'
-          }
+          timeout: 1000
         });
         
         if (response.data.success) {
@@ -804,6 +809,7 @@ export default function HomePage() {
           setCachedData('aquatic_portfolios', response.data.portfolios);
         }
       } catch (error) {
+        console.error('Portfolio fetch failed:', error.message);
         setPortfolios([]);
       }
     };
@@ -835,6 +841,7 @@ export default function HomePage() {
       };
     }
   }, [homeData.categories]);
+
   useEffect(() => {
     if (portfolios.length > 0) {
       const preloadImages = () => {
@@ -874,20 +881,20 @@ export default function HomePage() {
       </section>
 
       {showPortfolioSkeleton ? (
-  <div className="w-full py-16 bg-white">
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="text-center mb-12">
-        <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
-        <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
-      </div>
-      <div className="h-[400px] bg-slate-200 rounded-3xl animate-pulse"></div>
-    </div>
-  </div>
-) : portfolios.length > 0 ? (
-  <section data-aos="fade-up">
-    <OurProjects portfolios={portfolios} />
-  </section>
-) : null}
+        <div className="w-full py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
+              <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
+            </div>
+            <div className="h-[400px] bg-slate-200 rounded-3xl animate-pulse"></div>
+          </div>
+        </div>
+      ) : portfolios.length > 0 ? (
+        <section data-aos="fade-up">
+          <OurProjects portfolios={portfolios} />
+        </section>
+      ) : null}
 
       <section data-aos="fade-up">
         <FAQ />

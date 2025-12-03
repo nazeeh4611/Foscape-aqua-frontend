@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Calendar, MapPin, Sparkles, X, ChevronLeft, ChevronRight, Maximize2, User, Clock, Play, Pause } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Sparkles, X, ChevronLeft, ChevronRight, Maximize2, User, Clock } from 'lucide-react';
 import axios from 'axios';
 import AOS from 'aos';
 import { baseurl } from '../Base/Base';
@@ -41,26 +41,8 @@ const OurProjects = () => {
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  // Slider states
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [isImageLoading, setIsImageLoading] = useState(true);
-  const [sliderImagesLoaded, setSliderImagesLoaded] = useState([]);
-  const autoPlayRef = useRef(null);
   const navigate = useNavigate();
 
-  // Cache visible portfolios for slider
-  const visiblePortfolios = useMemo(() => {
-    return portfolios.slice(0, 8);
-  }, [portfolios]);
-
-  // Memoize active project for slider
-  const activeProject = useMemo(() => {
-    return visiblePortfolios[activeIndex] || null;
-  }, [visiblePortfolios, activeIndex]);
-
-  // Fetch portfolios
   const fetchPortfolios = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,7 +57,7 @@ const OurProjects = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await axios.get(`${baseurl}user/portfolios/featured`);
-      console.log(response,"is here");
+      console.log(response, "is here");
 
       clearTimeout(timeoutId);
 
@@ -83,9 +65,6 @@ const OurProjects = () => {
         const fetchedPortfolios = response.data.portfolios;
         setPortfolios(fetchedPortfolios);
         setPersistentCache(CACHE_KEY, fetchedPortfolios);
-        
-        // Preload first few images for slider
-        preloadSliderImages(fetchedPortfolios.slice(0, 4));
       }
     } catch (error) {
       if (error.name === 'CanceledError') {
@@ -101,77 +80,6 @@ const OurProjects = () => {
       setLoading(false);
     }
   }, []);
-
-  // Simple image preloading function
-  const preloadSliderImages = (projects) => {
-    const loadedIds = [];
-    projects.forEach(project => {
-      if (project?.mediaUrls?.[0]) {
-        const img = new Image();
-        img.src = project.mediaUrls[0];
-        img.onload = () => {
-          loadedIds.push(project._id);
-          setSliderImagesLoaded(prev => [...prev, project._id]);
-        };
-        img.onerror = () => {
-          console.warn(`Failed to load image for project: ${project._id}`);
-        };
-      }
-    });
-  };
-
-  // Load current slider image
-  useEffect(() => {
-    if (activeProject?.mediaUrls?.[0]) {
-      setIsImageLoading(true);
-      const img = new Image();
-      img.src = activeProject.mediaUrls[0];
-      img.onload = () => {
-        setIsImageLoading(false);
-        // Mark this image as loaded
-        if (!sliderImagesLoaded.includes(activeProject._id)) {
-          setSliderImagesLoaded(prev => [...prev, activeProject._id]);
-        }
-      };
-      img.onerror = () => {
-        setIsImageLoading(false);
-        console.warn(`Failed to load image for project: ${activeProject._id}`);
-      };
-    }
-  }, [activeProject]);
-
-  // Slider navigation
-  const handlePrevious = () => {
-    setIsImageLoading(true);
-    setActiveIndex(prev => (prev === 0 ? visiblePortfolios.length - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setIsImageLoading(true);
-    setActiveIndex(prev => (prev === visiblePortfolios.length - 1 ? 0 : prev + 1));
-  };
-
-  // Auto-play toggle
-  const handleAutoPlayToggle = () => {
-    setAutoPlay(prev => !prev);
-  };
-
-  // Auto-play effect
-  useEffect(() => {
-    if (autoPlay && visiblePortfolios.length > 1) {
-      autoPlayRef.current = setInterval(() => {
-        handleNext();
-      }, 4000);
-    } else if (autoPlayRef.current) {
-      clearInterval(autoPlayRef.current);
-    }
-    
-    return () => {
-      if (autoPlayRef.current) {
-        clearInterval(autoPlayRef.current);
-      }
-    };
-  }, [autoPlay, visiblePortfolios.length]);
 
   useEffect(() => {
     AOS.init({ duration: 900, once: true });
@@ -228,7 +136,6 @@ const OurProjects = () => {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  // Loading skeleton
   if (loading) {
     return (
       <div className="w-full py-16 bg-gradient-to-br from-slate-900 to-blue-900">
@@ -240,14 +147,6 @@ const OurProjects = () => {
               <div className="h-6 w-80 bg-white/5 rounded mx-auto"></div>
             </div>
           </div>
-          
-          {/* Slider skeleton */}
-          <div className="relative mb-16">
-            <div className="relative h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800/50 to-blue-800/50 border border-white/10 animate-pulse">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-blue-900"></div>
-            </div>
-          </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
@@ -288,150 +187,9 @@ const OurProjects = () => {
             </p>
           </div>
 
-          {/* Slider Section */}
-          {visiblePortfolios.length > 0 && (
-            <div className="relative mb-16" data-aos="fade-up">
-              <div className="relative h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800/50 to-blue-800/50 border border-white/10">
-                {/* Main Image */}
-                {activeProject?.mediaUrls?.[0] && (
-                  <>
-                    <img
-                      src={activeProject.mediaUrls[0]}
-                      alt={activeProject.name}
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                        !isImageLoading ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      loading="eager"
-                    />
-                    {isImageLoading && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-blue-900 animate-pulse"></div>
-                    )}
-                  </>
-                )}
-
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-
-                {/* Project Info */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`px-4 py-2 rounded-full text-sm font-bold text-white bg-gradient-to-r ${getCategoryGradient(activeProject?.category)} shadow-lg backdrop-blur-sm`}>
-                      {activeProject?.category?.charAt(0).toUpperCase() + activeProject?.category?.slice(1)}
-                    </div>
-                    {activeProject?.completionDate && (
-                      <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                        <Calendar className="w-4 h-4" />
-                        <span className="text-sm">{new Date(activeProject.completionDate).getFullYear()}</span>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-3xl font-bold mb-2">
-                    {activeProject?.name || 'Aquatic Project'}
-                  </h3>
-                  <p className="text-slate-200 text-lg mb-6 max-w-2xl">
-                    {activeProject?.description || 'Professional aquatic installation'}
-                  </p>
-                  
-                  <div className="flex items-center gap-4">
-                    {activeProject?.location && (
-                      <div className="flex items-center gap-2 text-slate-300">
-                        <MapPin className="w-4 h-4" />
-                        <span>{activeProject.location}</span>
-                      </div>
-                    )}
-                    {activeProject?.client && (
-                      <div className="flex items-center gap-2 text-slate-300">
-                        <User className="w-4 h-4" />
-                        <span>{activeProject.client}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Auto-play Toggle */}
-                <div className="absolute top-6 right-6 flex gap-2">
-                  <button
-                    onClick={handleAutoPlayToggle}
-                    className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all duration-300"
-                    aria-label={autoPlay ? 'Pause auto-play' : 'Play auto-play'}
-                  >
-                    {autoPlay ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </button>
-                </div>
-
-                {/* Navigation Arrows */}
-                <button
-                  onClick={handlePrevious}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all duration-300"
-                  aria-label="Previous project"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-
-                <button
-                  onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all duration-300"
-                  aria-label="Next project"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-
-                {/* Dots Indicator */}
-                {visiblePortfolios.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {visiblePortfolios.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setActiveIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                          index === activeIndex ? 'bg-white w-8' : 'bg-white/50 hover:bg-white/80'
-                        }`}
-                        aria-label={`Go to project ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Thumbnail Grid */}
-              {visiblePortfolios.length > 1 && (
-                <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {visiblePortfolios.map((project, index) => {
-                    const isActive = index === activeIndex;
-                    return (
-                      <button
-                        key={project._id || index}
-                        onClick={() => setActiveIndex(index)}
-                        className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${
-                          isActive ? 'ring-2 ring-blue-500 ring-offset-2' : 'hover:scale-105'
-                        }`}
-                      >
-                        <div className="aspect-square bg-gradient-to-br from-slate-800 to-blue-900">
-                          {project.mediaUrls?.[0] && (
-                            <img
-                              src={project.mediaUrls[0]}
-                              alt={project.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                          <span className="text-white text-sm font-medium truncate">
-                            {project.name}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Grid Cards Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {portfolios.slice(0, 3).map((portfolio, index) => (
+            {portfolios.map((portfolio, index) => (
               <div
                 key={portfolio._id}
                 className="group relative bg-white rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 cursor-pointer"
@@ -445,8 +203,16 @@ const OurProjects = () => {
                     alt={portfolio.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                  {/* Multiple images indicator */}
+                  {portfolio.mediaUrls.length > 1 && (
+                    <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-xs font-semibold text-white">
+                      +{portfolio.mediaUrls.length - 1} more
+                    </div>
+                  )}
 
                   <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient(portfolio.category)} shadow-lg`}>
                     {portfolio.category?.charAt(0).toUpperCase() + portfolio.category?.slice(1)}
@@ -479,19 +245,28 @@ const OurProjects = () => {
                     {portfolio.description}
                   </p>
 
-                  {portfolio.client && (
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 mb-2">
-                      <span className="text-sm text-slate-500">Client</span>
-                      <span className="text-sm font-semibold text-slate-900">{portfolio.client}</span>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {portfolio.client && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <span className="text-sm text-slate-500">Client</span>
+                        <span className="text-sm font-semibold text-slate-900">{portfolio.client}</span>
+                      </div>
+                    )}
 
-                  {portfolio.duration && (
-                    <div className="flex items-center justify-between py-2 border-t border-slate-100">
-                      <span className="text-sm text-slate-500">Duration</span>
-                      <span className="text-sm font-semibold text-slate-900">{portfolio.duration}</span>
-                    </div>
-                  )}
+                    {portfolio.duration && (
+                      <div className="flex items-center justify-between py-2 border-t border-slate-100">
+                        <span className="text-sm text-slate-500">Duration</span>
+                        <span className="text-sm font-semibold text-slate-900">{portfolio.duration}</span>
+                      </div>
+                    )}
+
+                    {portfolio.completionDate && (
+                      <div className="flex items-center justify-between py-2 border-t border-slate-100">
+                        <span className="text-sm text-slate-500">Completed</span>
+                        <span className="text-sm font-semibold text-slate-900">{formatDate(portfolio.completionDate)}</span>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mt-4 flex items-center justify-end text-blue-600 font-semibold text-sm group-hover:gap-2 transition-all duration-300">
                     <span>View Details</span>
@@ -514,7 +289,7 @@ const OurProjects = () => {
         </div>
       </div>
 
-      {/* Modal and Fullscreen components remain the same as before */}
+      {/* Project Detail Modal - Shows all images */}
       {selectedPortfolio && !fullscreenImage && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={closeModal}>
           <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -529,6 +304,7 @@ const OurProjects = () => {
             </div>
 
             <div className="p-6">
+              {/* Main Image with Navigation */}
               <div className="relative mb-6">
                 <img
                   src={selectedPortfolio.mediaUrls[currentImageIndex]}
@@ -565,26 +341,39 @@ const OurProjects = () => {
                 )}
               </div>
 
+              {/* All Images Thumbnail Strip */}
               {selectedPortfolio.mediaUrls.length > 1 && (
-                <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-                  {selectedPortfolio.mediaUrls.map((url, index) => (
-                    <img
-                      key={index}
-                      src={url}
-                      alt={`${selectedPortfolio.name} ${index + 1}`}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-24 h-24 object-cover rounded-lg cursor-pointer flex-shrink-0 ${
-                        currentImageIndex === index ? 'ring-4 ring-blue-600' : 'opacity-60 hover:opacity-100'
-                      } transition-all`}
-                    />
-                  ))}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-3">All Images ({selectedPortfolio.mediaUrls.length})</h3>
+                  <div className="flex gap-3 overflow-x-auto pb-4">
+                    {selectedPortfolio.mediaUrls.map((url, index) => (
+                      <div key={index} className="relative flex-shrink-0">
+                        <img
+                          src={url}
+                          alt={`${selectedPortfolio.name} ${index + 1}`}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`w-32 h-24 object-cover rounded-lg cursor-pointer transition-all ${
+                            currentImageIndex === index ? 'ring-4 ring-blue-600 scale-105' : 'opacity-60 hover:opacity-100 hover:scale-105'
+                          }`}
+                        />
+                        <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center text-xs text-white">
+                          {index + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <div className="space-y-4">
-                <p className="text-slate-700 leading-relaxed">{selectedPortfolio.description}</p>
+              {/* Project Details */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">Project Description</h3>
+                  <p className="text-slate-700 leading-relaxed">{selectedPortfolio.description}</p>
+                </div>
 
-                <div className="grid md:grid-cols-2 gap-4 pt-4">
+                {/* Project Info Grid */}
+                <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
                   {selectedPortfolio.client && (
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -632,11 +421,27 @@ const OurProjects = () => {
                       </div>
                     </div>
                   )}
+
+                  {selectedPortfolio.category && (
+                    <div className="md:col-span-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-5 h-5 text-white font-bold">C</div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500">Category</p>
+                          <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${getCategoryGradient(selectedPortfolio.category)} mt-1`}>
+                            {selectedPortfolio.category?.charAt(0).toUpperCase() + selectedPortfolio.category?.slice(1)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {selectedPortfolio.features && (
-                  <div className="pt-4">
-                    <h3 className="font-semibold text-slate-800 mb-2">Features</h3>
+                  <div className="pt-4 border-t border-slate-200">
+                    <h3 className="font-semibold text-slate-800 mb-2">Key Features</h3>
                     <p className="text-slate-600">{selectedPortfolio.features}</p>
                   </div>
                 )}
@@ -646,7 +451,7 @@ const OurProjects = () => {
         </div>
       )}
 
-      {/* Fullscreen Image */}
+      {/* Fullscreen Image View */}
       {fullscreenImage && selectedPortfolio && (
         <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center" onClick={closeFullscreen}>
           <button

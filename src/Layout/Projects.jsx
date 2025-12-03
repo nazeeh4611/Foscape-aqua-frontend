@@ -6,18 +6,24 @@ const OurProjects = ({ portfolios = [] }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [loadedImages, setLoadedImages] = useState({});
-  const sliderRef = useRef(null);
   const autoPlayRef = useRef(null);
-  const intersectionObserverRef = useRef(null);
 
+  // Cache visible portfolios
   const visiblePortfolios = useMemo(() => {
     return portfolios.slice(0, 8);
   }, [portfolios]);
 
+  // Memoize active project
+  const activeProject = useMemo(() => {
+    return visiblePortfolios[activeIndex] || null;
+  }, [visiblePortfolios, activeIndex]);
+
+  // Simple image load handler
   const handleImageLoad = (id) => {
     setLoadedImages(prev => ({ ...prev, [id]: true }));
   };
 
+  // Navigation handlers
   const handlePrevious = () => {
     setActiveIndex(prev => (prev === 0 ? visiblePortfolios.length - 1 : prev - 1));
   };
@@ -26,10 +32,12 @@ const OurProjects = ({ portfolios = [] }) => {
     setActiveIndex(prev => (prev === visiblePortfolios.length - 1 ? 0 : prev + 1));
   };
 
+  // Auto-play toggle
   const handleAutoPlayToggle = () => {
     setAutoPlay(prev => !prev);
   };
 
+  // Auto-play effect
   useEffect(() => {
     if (autoPlay && visiblePortfolios.length > 1) {
       autoPlayRef.current = setInterval(() => {
@@ -38,6 +46,7 @@ const OurProjects = ({ portfolios = [] }) => {
     } else if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
     }
+    
     return () => {
       if (autoPlayRef.current) {
         clearInterval(autoPlayRef.current);
@@ -45,52 +54,26 @@ const OurProjects = ({ portfolios = [] }) => {
     };
   }, [autoPlay, visiblePortfolios.length]);
 
+  // Preload current and next image
   useEffect(() => {
-    if (!visiblePortfolios[activeIndex]?.mediaUrls?.[0]) return;
+    if (!activeProject?.mediaUrls?.[0]) return;
 
+    // Load current image
     const img = new Image();
-    img.src = visiblePortfolios[activeIndex].mediaUrls[0];
-    img.onload = () => {
-      handleImageLoad(visiblePortfolios[activeIndex]._id);
-    };
-  }, [activeIndex, visiblePortfolios]);
-
-  useEffect(() => {
-    if ('IntersectionObserver' in window && visiblePortfolios.length > 0) {
-      intersectionObserverRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const img = entry.target;
-              const src = img.getAttribute('data-src');
-              if (src) {
-                img.src = src;
-                img.removeAttribute('data-src');
-              }
-              intersectionObserverRef.current.unobserve(img);
-            }
-          });
-        },
-        {
-          rootMargin: '100px',
-          threshold: 0.1
-        }
-      );
-
-      document.querySelectorAll('img[data-src]').forEach(img => {
-        intersectionObserverRef.current.observe(img);
-      });
-
-      return () => {
-        if (intersectionObserverRef.current) {
-          intersectionObserverRef.current.disconnect();
-        }
-      };
+    img.src = activeProject.mediaUrls[0];
+    img.onload = () => handleImageLoad(activeProject._id);
+    
+    // Preload next image
+    const nextIndex = (activeIndex + 1) % visiblePortfolios.length;
+    const nextProject = visiblePortfolios[nextIndex];
+    if (nextProject?.mediaUrls?.[0] && !loadedImages[nextProject._id]) {
+      const nextImg = new Image();
+      nextImg.src = nextProject.mediaUrls[0];
+      nextImg.onload = () => handleImageLoad(nextProject._id);
     }
-  }, [visiblePortfolios]);
+  }, [activeProject, activeIndex, visiblePortfolios]);
 
-  const activeProject = visiblePortfolios[activeIndex];
-
+  // Don't render if no portfolios
   if (visiblePortfolios.length === 0) {
     return null;
   }
@@ -106,29 +89,30 @@ const OurProjects = ({ portfolios = [] }) => {
         </div>
 
         <div className="relative">
-          <div
-            ref={sliderRef}
-            className="relative h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-slate-100 to-blue-100"
-          >
+          {/* Main Slider */}
+          <div className="relative h-[500px] rounded-3xl overflow-hidden bg-gradient-to-br from-slate-100 to-blue-100">
+            {/* Main Image */}
             {activeProject?.mediaUrls?.[0] && (
               <img
-                data-src={activeProject.mediaUrls[0]}
+                src={activeProject.mediaUrls[0]}
                 alt={activeProject.name}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
                   loadedImages[activeProject._id] ? 'opacity-100' : 'opacity-0'
                 }`}
-                onLoad={() => handleImageLoad(activeProject._id)}
                 loading="eager"
                 decoding="async"
               />
             )}
 
+            {/* Loading Skeleton */}
             {!loadedImages[activeProject?._id] && (
               <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-blue-200 animate-pulse"></div>
             )}
 
+            {/* Overlay Gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
 
+            {/* Project Info */}
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
               <h3 className="text-3xl font-bold mb-2">
                 {activeProject?.name || 'Aquatic Project'}
@@ -143,6 +127,7 @@ const OurProjects = ({ portfolios = [] }) => {
               )}
             </div>
 
+            {/* Auto-play Toggle */}
             <div className="absolute top-6 right-6 flex gap-2">
               <button
                 onClick={handleAutoPlayToggle}
@@ -153,6 +138,7 @@ const OurProjects = ({ portfolios = [] }) => {
               </button>
             </div>
 
+            {/* Navigation Arrows */}
             <button
               onClick={handlePrevious}
               className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all duration-300"
@@ -169,6 +155,7 @@ const OurProjects = ({ portfolios = [] }) => {
               <ChevronRight className="w-6 h-6" />
             </button>
 
+            {/* Dots Indicator */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
               {visiblePortfolios.map((_, index) => (
                 <button
@@ -183,6 +170,7 @@ const OurProjects = ({ portfolios = [] }) => {
             </div>
           </div>
 
+          {/* Thumbnail Grid */}
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
             {visiblePortfolios.map((project, index) => {
               const isActive = index === activeIndex;
@@ -197,12 +185,11 @@ const OurProjects = ({ portfolios = [] }) => {
                   <div className="aspect-square bg-gradient-to-br from-slate-200 to-blue-200">
                     {project.mediaUrls?.[0] && (
                       <img
-                        data-src={project.mediaUrls[0]}
+                        src={project.mediaUrls[0]}
                         alt={project.name}
                         className={`w-full h-full object-cover transition-opacity duration-300 ${
                           loadedImages[project._id] ? 'opacity-100' : 'opacity-0'
                         }`}
-                        onLoad={() => handleImageLoad(project._id)}
                         loading="lazy"
                         decoding="async"
                       />
@@ -211,7 +198,7 @@ const OurProjects = ({ portfolios = [] }) => {
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-blue-200 animate-pulse"></div>
                     )}
                   </div>
-                  <div className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4`}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                     <span className="text-white text-sm font-medium truncate">
                       {project.name}
                     </span>
@@ -221,6 +208,7 @@ const OurProjects = ({ portfolios = [] }) => {
             })}
           </div>
 
+          {/* View All Button */}
           {visiblePortfolios.length > 4 && (
             <div className="text-center mt-8">
               <button
@@ -234,6 +222,7 @@ const OurProjects = ({ portfolios = [] }) => {
         </div>
       </div>
 
+      {/* Project Detail Modal */}
       {selectedProject && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="relative max-w-4xl w-full max-h-[90vh] overflow-auto bg-white rounded-3xl">
@@ -251,6 +240,7 @@ const OurProjects = ({ portfolios = [] }) => {
                     src={selectedProject.mediaUrls[0]}
                     alt={selectedProject.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 )}
               </div>
@@ -278,4 +268,4 @@ const OurProjects = ({ portfolios = [] }) => {
   );
 };
 
-export default OurProjects;
+export default React.memo(OurProjects);

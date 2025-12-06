@@ -101,12 +101,12 @@ const ProductDetailsPage = () => {
         showToast.success('Product added to cart successfully!');
       } else {
         // If result exists but success is false, or if result is undefined
-        const errorMessage = result?.message || 'Failed to add product to cart';
+        const errorMessage = result?.message || 'Please Login before add';
         showToast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      showToast.error('Failed to add product to cart. Please try again.');
+      showToast.error('Please Login before add');
     } finally {
       setAddingToCart(false);
     }

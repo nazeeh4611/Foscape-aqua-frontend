@@ -123,7 +123,7 @@ const Footer = () => {
   <span className="text-gray-400 text-sm">
 
   <a
-    href="https://www.instagram.com/flyhomies_associates/"
+    href="https://flyhomies.com/"
     target="_blank"
     rel="noopener noreferrer"
     className="hover:opacity-70 transition"

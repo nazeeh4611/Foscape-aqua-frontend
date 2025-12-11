@@ -29,10 +29,7 @@ const getCachedData = (key) => {
 
 const setCachedData = (key, data) => {
   try {
-    localStorage.setItem(key, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (error) {
     console.warn('Cache failed:', error);
   }
@@ -68,10 +65,10 @@ const CategoryComponent = ({ categories = [] }) => {
 
   useEffect(() => {
     if (!activeCategory) return;
-    
+
     const loadCategoryDetails = async () => {
       if (categoryDetails[activeCategory]?.description) return;
-      
+
       const cached = getCachedData(`category_detail_${activeCategory}`);
       if (cached) {
         setCategoryDetails(prev => ({ ...prev, [activeCategory]: cached }));
@@ -80,9 +77,7 @@ const CategoryComponent = ({ categories = [] }) => {
 
       setLoadingDetails(true);
       try {
-        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, {
-          timeout: 1500
-        });
+        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, { timeout: 1500 });
         if (response.data.success) {
           const details = response.data.data;
           setCategoryDetails(prev => ({ ...prev, [activeCategory]: details }));
@@ -122,52 +117,53 @@ const CategoryComponent = ({ categories = [] }) => {
   if (categories.length === 0) return null;
 
   return (
-    <div className="w-full py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Our Categories</h2>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Fish className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Categories</span>
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-3">
+            Our Categories
+          </h2>
+
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Explore our premium selection of aquatic life and professional equipment
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-6 mb-12">
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map((category, index) => {
             const gradientColor = getGradientColor(index);
             const isActive = activeCategory === category._id;
-            
             return (
               <button
                 key={category._id}
                 onClick={() => setActiveCategory(category._id)}
-                className={`group relative flex flex-col items-center gap-3 p-6 rounded-2xl transition-all duration-300 hover:scale-105 w-36 ${
-                  isActive 
-                    ? 'bg-gradient-to-br from-blue-50 to-cyan-50 shadow-xl border-2 border-blue-200' 
-                    : 'bg-slate-50 hover:bg-white shadow-md hover:shadow-lg'
+                className={`group flex flex-col items-center gap-3 p-6 w-36 rounded-2xl transition-all 
+                ${isActive
+                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 shadow-xl border-2 border-blue-200"
+                  : "bg-slate-50 hover:bg-white shadow-md hover:shadow-lg"
                 }`}
               >
-                <div className={`relative w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   isActive 
                     ? `bg-gradient-to-br ${gradientColor} shadow-lg` 
                     : 'bg-white'
                 }`}>
-                  <img 
-                    src={category.image} 
-                    alt={category.name}
-                    className="w-14 h-14 object-cover rounded-lg"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  {category.image ? (
+                    <img src={category.image} alt={category.name} className="w-10 h-10 object-contain" />
+                  ) : (
+                    <Fish className="w-10 h-10 text-blue-600" />
+                  )}
                 </div>
-                
-                <span className={`text-sm font-semibold text-center transition-colors duration-300 ${
-                  isActive ? 'text-slate-900' : 'text-slate-700'
-                }`}>
-                  {category.name}
-                </span>
+
+                <span className="text-slate-900 font-semibold">{category.name}</span>
 
                 {isActive && (
-                  <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
+                  <div className={`w-12 h-1.5 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
                 )}
               </button>
             );
@@ -175,54 +171,61 @@ const CategoryComponent = ({ categories = [] }) => {
         </div>
 
         {activeData && (
-          <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] rounded-3xl shadow-2xl p-8 mb-8">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-shrink-0">
-                <div className={`w-56 h-56 rounded-2xl bg-gradient-to-br ${getGradientColor(categories.findIndex(c => c._id === activeCategory))} p-1.5 shadow-2xl`}>
-                  <div className="w-full h-full bg-white rounded-xl overflow-hidden">
-                    <img 
-                      src={activeData.image} 
-                      alt={activeData.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
+          <div className="w-full mx-auto bg-gradient-to-r from-[#144E8C] to-[#78CDD1] rounded-3xl p-6 md:p-12 shadow-2xl">
+
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
+
+              <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl p-1.5 shadow-2xl ${
+                getGradientColor(categories.findIndex(c => c._id === activeCategory))
+              }`}>
+                <div className="w-full h-full bg-white rounded-xl flex items-center justify-center">
+                  <img
+                    src={activeData.image}
+                    alt={activeData.name}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
-              
-              <div className="flex-grow text-center md:text-left">
-                <h3 className="text-4xl font-bold text-white mb-4">
-                  {activeData.name}
-                </h3>
+
+              <div className="flex-1 text-white">
+
+                <h3 className="text-4xl font-bold mb-3">{activeData.name}</h3>
+
                 {loadingDetails ? (
-                  <div className="h-6 bg-white/20 rounded w-3/4 mb-6 animate-pulse"></div>
+                  <div className="space-y-3 opacity-70 animate-pulse">
+                    <div className="h-4 bg-white/30 rounded"></div>
+                    <div className="h-4 bg-white/30 rounded w-4/5"></div>
+                    <div className="h-4 bg-white/30 rounded w-3/5"></div>
+                  </div>
                 ) : (
-                  <p className="text-slate-200 mb-6 leading-relaxed text-lg">
-                    {activeData.description || 'Explore our quality products in this category'}
+                  <p className="text-lg mb-6">
+                    {activeData.description || "Explore our quality products in this category"}
                   </p>
                 )}
-                <button 
+
+                <button
                   onClick={() => handleViewProducts(activeData._id)}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-xl font-semibold hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-semibold shadow-lg hover:scale-105 transition"
                 >
-                  <Package className="w-5 h-5" />
                   View Products
+                  <ChevronRight className="w-5 h-5" />
                 </button>
+
               </div>
             </div>
           </div>
         )}
-        
-        <div className="text-center">
-          <button 
+
+        <div className="text-center mt-12">
+          <button
             onClick={() => navigate('/categories')}
-            className="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-br from-slate-900 to-blue-900 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
           >
-            <Fish className="w-5 h-5" />
             Explore All Categories
+            <ChevronDown className="w-5 h-5" />
           </button>
         </div>
+
       </div>
     </div>
   );
@@ -230,10 +233,9 @@ const CategoryComponent = ({ categories = [] }) => {
 
 const Services = () => {
   const navigate = useNavigate();
-
   const services = [
     {
-      icon: <Fish className="w-8 h-8" />,
+      icon: <Package className="w-8 h-8" />,
       title: "Premium Quality",
       description: "Hand-selected aquatic life and equipment from trusted sources",
       gradient: "from-blue-500 to-cyan-500"
@@ -259,27 +261,37 @@ const Services = () => {
   ];
 
   return (
-    <div className="w-full py-16 bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Our Services</h2>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <CheckCircle className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Services</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Comprehensive Solutions
+          </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Comprehensive solutions for all your aquatic needs
+            For all your aquatic needs
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {services.map((service, index) => (
-            <div 
-              key={index} 
-              className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer"
+            <div
+              key={index}
               onClick={() => navigate('/service')}
+              className="group bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
             >
-              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                 {service.icon}
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">{service.title}</h3>
-              <p className="text-slate-600 leading-relaxed">{service.description}</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {service.title}
+              </h3>
+              <p className="text-slate-600">
+                {service.description}
+              </p>
             </div>
           ))}
         </div>
@@ -290,32 +302,59 @@ const Services = () => {
 
 const WhyChooseUs = () => {
   const reasons = [
-    { icon: <CheckCircle className="w-6 h-6" />, title: "Expert Knowledge", description: "Over 15 years of experience in aquatic life care" },
-    { icon: <CheckCircle className="w-6 h-6" />, title: "Best Prices", description: "Competitive pricing without compromising quality" },
-    { icon: <CheckCircle className="w-6 h-6" />, title: "Wide Selection", description: "Extensive range of products for all your needs" },
-    { icon: <CheckCircle className="w-6 h-6" />, title: "Customer First", description: "Your satisfaction is our top priority" }
+    {
+      icon: <Fish className="w-6 h-6" />,
+      title: "Expert Knowledge",
+      description: "Over 15 years of experience in aquatic life care"
+    },
+    {
+      icon: <Package className="w-6 h-6" />,
+      title: "Best Prices",
+      description: "Competitive pricing without compromising quality"
+    },
+    {
+      icon: <Truck className="w-6 h-6" />,
+      title: "Wide Selection",
+      description: "Extensive range of products for all your needs"
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: "Customer First",
+      description: "Your satisfaction is our top priority"
+    }
   ];
 
   return (
-    <div className="w-full py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Why Choose Us</h2>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Star className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Why Choose Us</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            The Preferred Choice
+          </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Discover what makes us the preferred choice for aquatic enthusiasts
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {reasons.map((reason, index) => (
-            <div key={index} className="flex gap-4 p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl hover:shadow-lg transition-all duration-300">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
+            <div
+              key={index}
+              className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-6">
                 {reason.icon}
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{reason.title}</h3>
-                <p className="text-slate-600">{reason.description}</p>
-              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {reason.title}
+              </h3>
+              <p className="text-slate-600">
+                {reason.description}
+              </p>
             </div>
           ))}
         </div>
@@ -326,36 +365,57 @@ const WhyChooseUs = () => {
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
-
   const faqs = [
-    { question: "What is your shipping policy?", answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe." },
-    { question: "Do you offer a health guarantee?", answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery." },
-    { question: "How do I care for my new fish?", answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions." },
-    { question: "What payment methods do you accept?", answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay." },
-    { question: "Can I return or exchange products?", answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy." }
+    {
+      question: "What is your shipping policy?",
+      answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe."
+    },
+    {
+      question: "Do you offer a health guarantee?",
+      answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery."
+    },
+    {
+      question: "How do I care for my new fish?",
+      answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions."
+    },
+    {
+      question: "What payment methods do you accept?",
+      answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay."
+    },
+    {
+      question: "Can I return or exchange products?",
+      answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy."
+    }
   ];
 
   return (
-    <div className="w-full py-16 bg-white">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
-          <p className="text-lg text-slate-600">Find answers to common questions about our products and services</p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <span className="text-blue-600 font-medium">FAQ</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Find answers to common questions about our products and services
+          </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {faqs.map((faq, index) => (
-            <div key={index} className="bg-slate-50 rounded-2xl overflow-hidden">
+            <div key={index} className="border-b border-slate-100 last:border-b-0">
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 className="w-full flex items-center justify-between p-6 text-left hover:bg-slate-100 transition-colors duration-300"
               >
                 <span className="text-lg font-semibold text-slate-900">{faq.question}</span>
-                <ChevronDown className={`w-6 h-6 text-slate-600 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
               </button>
               {openIndex === index && (
                 <div className="px-6 pb-6">
-                  <p className="text-slate-600 leading-relaxed">{faq.answer}</p>
+                  <p className="text-slate-600">{faq.answer}</p>
                 </div>
               )}
             </div>
@@ -368,33 +428,54 @@ const FAQ = () => {
 
 const Testimonials = () => {
   const testimonials = [
-    { name: "John Smith", role: "Aquarium Enthusiast", content: "Excellent quality products and outstanding customer service. My fish are thriving!", rating: 5 },
-    { name: "Sarah Johnson", role: "Pet Store Owner", content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.", rating: 5 },
-    { name: "Mike Chen", role: "First-time Buyer", content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.", rating: 5 }
+    {
+      name: "John Smith",
+      role: "Aquarium Enthusiast",
+      content: "Excellent quality products and outstanding customer service. My fish are thriving!",
+      rating: 5
+    },
+    {
+      name: "Sarah Johnson",
+      role: "Pet Store Owner",
+      content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.",
+      rating: 5
+    },
+    {
+      name: "Mike Chen",
+      role: "First-time Buyer",
+      content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.",
+      rating: 5
+    }
   ];
 
   return (
-    <div className="w-full py-16 bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">What Our Clients Say</h2>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Star className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Testimonials</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            What Our Clients Say
+          </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Read what our satisfied customers have to say about their experience
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div key={index} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg">
               <div className="flex gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                 ))}
               </div>
-              <p className="text-slate-600 mb-6 leading-relaxed">"{testimonial.content}"</p>
+              <p className="text-slate-700 italic mb-6">"{testimonial.content}"</p>
               <div>
-                <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
-                <p className="text-sm text-slate-500">{testimonial.role}</p>
+                <p className="font-bold text-slate-900">{testimonial.name}</p>
+                <p className="text-slate-600">{testimonial.role}</p>
               </div>
             </div>
           ))}
@@ -412,323 +493,478 @@ const FeaturedProducts = ({ products = [] }) => {
   const startPosRef = useRef({ x: 0, scrollLeft: 0 });
   const autoSlideIntervalRef = useRef(null);
   const isHoveringRef = useRef(false);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const AUTO_SLIDE_SPEED = 2.5;
-  const AUTO_SLIDE_DELAY = 4000;
+  const AUTO_SLIDE_SPEED = 5;
+  const CARD_WIDTH = 320;
+  const CARD_GAP = 24;
+
+  const duplicatedProducts = useMemo(() => {
+    if (!products.length) return [];
+    return [...products, ...products, ...products];
+  }, [products]);
+
+  const updateCurrentIndex = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider || !products.length) return;
+    const totalWidth = CARD_WIDTH + CARD_GAP;
+    const singleSetWidth = totalWidth * products.length;
+    let scrollPos = slider.scrollLeft;
+    
+    // Normalize scroll position to single set
+    while (scrollPos >= singleSetWidth * 2) scrollPos -= singleSetWidth;
+    while (scrollPos < singleSetWidth) scrollPos += singleSetWidth;
+    
+    const newIndex = Math.round((scrollPos - singleSetWidth) / totalWidth);
+    const normalizedIndex = ((newIndex % products.length) + products.length) % products.length;
+    setCurrentIndex(normalizedIndex);
+  }, [products.length]);
 
   const startAutoSlide = useCallback(() => {
-    if (autoSlideIntervalRef.current) {
-      cancelAnimationFrame(autoSlideIntervalRef.current);
-    }
-
-    const slide = () => {
+    if (autoSlideIntervalRef.current) clearInterval(autoSlideIntervalRef.current);
+    
+    autoSlideIntervalRef.current = setInterval(() => {
       const slider = sliderRef.current;
-      if (!slider || isDraggingRef.current || isHoveringRef.current) {
-        autoSlideIntervalRef.current = requestAnimationFrame(slide);
-        return;
-      }
-
+      if (!slider || isDraggingRef.current || isHoveringRef.current || !products.length) return;
+      
       slider.scrollLeft += AUTO_SLIDE_SPEED;
-
-      if (slider.scrollLeft >= slider.scrollWidth / 2) {
-        slider.scrollLeft = 0;
+      
+      const totalWidth = CARD_WIDTH + CARD_GAP;
+      const singleSetWidth = totalWidth * products.length;
+      
+      // Reset position when reaching end of second set
+      if (slider.scrollLeft >= singleSetWidth * 2.5) {
+        slider.scrollLeft = singleSetWidth + (slider.scrollLeft % singleSetWidth);
       }
+      
+      updateCurrentIndex();
+    }, 20);
+  }, [products.length, updateCurrentIndex]);
 
-      updateArrowVisibility();
-      autoSlideIntervalRef.current = requestAnimationFrame(slide);
-    };
-
-    autoSlideIntervalRef.current = requestAnimationFrame(slide);
+  const stopAutoSlide = useCallback(() => {
+    if (autoSlideIntervalRef.current) {
+      clearInterval(autoSlideIntervalRef.current);
+      autoSlideIntervalRef.current = null;
+    }
   }, []);
 
   const handleMouseEnter = useCallback(() => {
     isHoveringRef.current = true;
-  }, []);
+    stopAutoSlide();
+  }, [stopAutoSlide]);
 
   const handleMouseLeave = useCallback(() => {
     isHoveringRef.current = false;
-  }, []);
-
-  const updateArrowVisibility = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    const isAtStart = slider.scrollLeft <= 10;
-    const isAtEnd = slider.scrollLeft >= slider.scrollWidth - slider.clientWidth - 10;
-
-    setShowLeftArrow(!isAtStart);
-    setShowRightArrow(!isAtEnd && slider.scrollWidth > slider.clientWidth);
-  }, []);
+    startAutoSlide();
+  }, [startAutoSlide]);
 
   const handleDragStart = useCallback((e) => {
     const slider = sliderRef.current;
     if (!slider) return;
-
-    isDraggingRef.current = true;
-    const x = e.pageX || e.touches[0].pageX;
-    startPosRef.current = { x, scrollLeft: slider.scrollLeft };
     
-    slider.style.scrollBehavior = 'auto';
-    slider.classList.add('grabbing');
-  }, []);
+    isDraggingRef.current = true;
+    const x = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
+    startPosRef.current = { x, scrollLeft: slider.scrollLeft };
+    slider.style.scrollBehavior = "auto";
+    slider.classList.add("grabbing");
+    stopAutoSlide();
+  }, [stopAutoSlide]);
 
   const handleDragMove = useCallback((e) => {
     if (!isDraggingRef.current) return;
-
     const slider = sliderRef.current;
     if (!slider) return;
-
+    
     e.preventDefault();
-    const x = e.pageX || e.touches[0].pageX;
-    const walk = (x - startPosRef.current.x);
+    const x = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
+    const walk = (x - startPosRef.current.x) * 1.5;
     slider.scrollLeft = startPosRef.current.scrollLeft - walk;
-
-    updateArrowVisibility();
-  }, [updateArrowVisibility]);
+    updateCurrentIndex();
+  }, [updateCurrentIndex]);
 
   const handleDragEnd = useCallback(() => {
-    isDraggingRef.current = false;
     const slider = sliderRef.current;
     if (!slider) return;
-
-    slider.style.scrollBehavior = 'smooth';
-    slider.classList.remove('grabbing');
     
-    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
-  }, [startAutoSlide]);
+    isDraggingRef.current = false;
+    slider.style.scrollBehavior = "smooth";
+    slider.classList.remove("grabbing");
+    
+    const totalWidth = CARD_WIDTH + CARD_GAP;
+    const singleSetWidth = totalWidth * products.length;
+    
+    // Snap to middle set if outside bounds
+    if (slider.scrollLeft < singleSetWidth * 0.5) {
+      slider.scrollLeft += singleSetWidth;
+    } else if (slider.scrollLeft >= singleSetWidth * 2.5) {
+      slider.scrollLeft -= singleSetWidth;
+    }
+    
+    updateCurrentIndex();
+    setTimeout(() => startAutoSlide(), 500);
+  }, [products.length, startAutoSlide, updateCurrentIndex]);
+
+  const scrollToIndex = useCallback((index) => {
+    const slider = sliderRef.current;
+    if (!slider || !products.length) return;
+    
+    stopAutoSlide();
+    const totalWidth = CARD_WIDTH + CARD_GAP;
+    const singleSetWidth = totalWidth * products.length;
+    slider.scrollTo({ left: singleSetWidth + index * totalWidth, behavior: "smooth" });
+    setCurrentIndex(index);
+    
+    setTimeout(() => startAutoSlide(), 800);
+  }, [products.length, startAutoSlide, stopAutoSlide]);
 
   const scrollLeft = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
-
-    const cardWidth = 320;
-    slider.scrollLeft -= cardWidth;
-    updateArrowVisibility();
     
-    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
-  }, [startAutoSlide, updateArrowVisibility]);
+    stopAutoSlide();
+    const totalWidth = CARD_WIDTH + CARD_GAP;
+    slider.scrollBy({ left: -totalWidth, behavior: "smooth" });
+    
+    setTimeout(() => {
+      updateCurrentIndex();
+      startAutoSlide();
+    }, 600);
+  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex]);
 
   const scrollRight = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
-
-    const cardWidth = 320;
-    slider.scrollLeft += cardWidth;
-    updateArrowVisibility();
     
-    setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
-  }, [startAutoSlide, updateArrowVisibility]);
+    stopAutoSlide();
+    const totalWidth = CARD_WIDTH + CARD_GAP;
+    slider.scrollBy({ left: totalWidth, behavior: "smooth" });
+    
+    setTimeout(() => {
+      updateCurrentIndex();
+      startAutoSlide();
+    }, 600);
+  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex]);
 
+  // Initialize scroll position and start auto-slide
+  useEffect(() => {
+    if (products.length && sliderRef.current) {
+      const totalWidth = CARD_WIDTH + CARD_GAP;
+      const singleSetWidth = totalWidth * products.length;
+      sliderRef.current.scrollLeft = singleSetWidth;
+      
+      // Start auto-slide after initial render
+      const timer = setTimeout(() => {
+        startAutoSlide();
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer);
+        stopAutoSlide();
+      };
+    }
+  }, [products.length, startAutoSlide, stopAutoSlide]);
+
+  // Set up event listeners
   useEffect(() => {
     const slider = sliderRef.current;
     const container = containerRef.current;
-    if (!slider || !container) return;
+    if (!slider || !container || !products.length) return;
 
-    slider.addEventListener('mousedown', handleDragStart);
-    slider.addEventListener('mouseenter', handleMouseEnter);
-    slider.addEventListener('mouseleave', handleMouseLeave);
-    container.addEventListener('mouseleave', handleMouseLeave);
-    
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('mouseup', handleDragEnd);
-
-    slider.addEventListener('touchstart', handleDragStart, { passive: false });
-    slider.addEventListener('touchmove', handleDragMove, { passive: false });
-    slider.addEventListener('touchend', handleDragEnd);
-    slider.addEventListener('touchcancel', handleDragEnd);
-
-    slider.addEventListener('scroll', updateArrowVisibility);
-
-    updateArrowVisibility();
-
-    return () => {
-      slider.removeEventListener('mousedown', handleDragStart);
-      slider.removeEventListener('mouseenter', handleMouseEnter);
-      slider.removeEventListener('mouseleave', handleMouseLeave);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-      
-      document.removeEventListener('mousemove', handleDragMove);
-      document.removeEventListener('mouseup', handleDragEnd);
-
-      slider.removeEventListener('touchstart', handleDragStart);
-      slider.removeEventListener('touchmove', handleDragMove);
-      slider.removeEventListener('touchend', handleDragEnd);
-      slider.removeEventListener('touchcancel', handleDragEnd);
-
-      slider.removeEventListener('scroll', updateArrowVisibility);
-
-      if (autoSlideIntervalRef.current) {
-        cancelAnimationFrame(autoSlideIntervalRef.current);
+    const handleScroll = () => {
+      if (!isDraggingRef.current) {
+        updateCurrentIndex();
       }
     };
-  }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateArrowVisibility]);
 
-  useEffect(() => {
-    if (products.length > 0) {
-      const timer = setTimeout(startAutoSlide, 1000);
-      return () => {
-        clearTimeout(timer);
-        if (autoSlideIntervalRef.current) {
-          cancelAnimationFrame(autoSlideIntervalRef.current);
-        }
-      };
-    }
-  }, [products.length, startAutoSlide]);
+    slider.addEventListener("mousedown", handleDragStart);
+    slider.addEventListener("mouseenter", handleMouseEnter);
+    slider.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mousemove", handleDragMove);
+    document.addEventListener("mouseup", handleDragEnd);
+    slider.addEventListener("touchstart", handleDragStart, { passive: false });
+    slider.addEventListener("touchmove", handleDragMove, { passive: false });
+    slider.addEventListener("touchend", handleDragEnd);
+    slider.addEventListener("scroll", handleScroll, { passive: true });
 
-  const handleClick = useCallback((id) => {
-    if (!isDraggingRef.current) {
-      navigate(`/product/${id}`);
+    return () => {
+      slider.removeEventListener("mousedown", handleDragStart);
+      slider.removeEventListener("mouseenter", handleMouseEnter);
+      slider.removeEventListener("mouseleave", handleMouseLeave);
+      container.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("mousemove", handleDragMove);
+      document.removeEventListener("mouseup", handleDragEnd);
+      slider.removeEventListener("touchstart", handleDragStart);
+      slider.removeEventListener("touchmove", handleDragMove);
+      slider.removeEventListener("touchend", handleDragEnd);
+      slider.removeEventListener("scroll", handleScroll);
+    };
+  }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateCurrentIndex, products.length]);
+
+  const handleClick = useCallback((id, e) => {
+    // Prevent navigation if dragging
+    if (isDraggingRef.current || Math.abs(e.currentTarget.getBoundingClientRect().left - startPosRef.current.x) > 5) {
+      e.preventDefault();
+      return;
     }
+    navigate(`/product/${id}`);
   }, [navigate]);
 
-  if (products.length === 0) return null;
+  if (!products.length) return null;
 
-  const duplicatedProducts = [...products, ...products, ...products];
+  const gradients = [
+    "from-blue-600 to-cyan-600",
+    "from-emerald-600 to-teal-600",
+    "from-purple-600 to-pink-600",
+    "from-orange-600 to-red-600",
+    "from-indigo-600 to-blue-600",
+    "from-rose-600 to-pink-600"
+  ];
+
+  const getGradientColor = (index) => gradients[index % gradients.length];
 
   return (
-    <div className="w-full py-14 bg-white overflow-hidden" ref={containerRef}>
-      <div className="max-w-7xl mx-auto px-4 mb-10 text-center relative">
-        <h2 className="text-4xl font-bold text-slate-900 mb-2">Featured Products</h2>
-        <p className="text-lg text-slate-600">Check out our premium selection</p>
-
-        {showLeftArrow && (
-          <button
-            onClick={scrollLeft}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-6 h-6 text-slate-700" />
-          </button>
-        )}
-
-        {showRightArrow && (
-          <button
-            onClick={scrollRight}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-6 h-6 text-slate-700" />
-          </button>
-        )}
-      </div>
-
-      <div className="relative">
-        <div
-          ref={sliderRef}
-          className="flex gap-6 overflow-x-auto no-scrollbar select-none cursor-grab active:cursor-grabbing"
-          style={{ 
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            padding: '0 1rem'
-          }}
-        >
-          {duplicatedProducts.map((product, index) => (
-            <div
-              key={`${product._id}-${index}`}
-              className="flex-shrink-0 w-80"
-              onClick={() => handleClick(product._id)}
-            >
-              <div className="bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 rounded-2xl overflow-hidden">
-                <div className="relative h-64 bg-slate-100 overflow-hidden">
-                  <img
-                    src={product.images?.[0]}
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                    alt={product.name}
-                    loading="lazy"
-                    decoding="async"
-                    draggable="false"
-                  />
-                  {product.discount > 0 && (
-                    <span className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 text-sm rounded-full font-semibold shadow-lg">
-                      {product.discount}% OFF
-                    </span>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold truncate mb-2 text-slate-900">{product.name}</h3>
-                  <p className="text-slate-600 text-sm line-clamp-2 mb-4">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                      {product.discount > 0 && (
-                        <span className="ml-2 text-sm line-through text-slate-400">
-                          ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
-                        </span>
-                      )}
-                    </div>
-                    <button className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg">
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full mb-4 shadow-lg">
+            <Star className="w-4 h-4" />
+            <span className="font-medium">Featured Products</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Premium Selection</h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">Discover our handpicked collection of top-quality aquatic products</p>
         </div>
 
-        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none z-5"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-5"></div>
-      </div>
+        <div className="relative" ref={containerRef}>
+          <button 
+            onClick={scrollLeft} 
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
 
-      <div className="flex justify-center gap-2 mt-8">
-        {products.slice(0, Math.min(5, products.length)).map((_, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              const slider = sliderRef.current;
-              if (slider) {
-                const cardWidth = 320;
-                const gap = 24;
-                slider.scrollLeft = index * (cardWidth + gap);
-                updateArrowVisibility();
-                setTimeout(startAutoSlide, AUTO_SLIDE_DELAY);
-              }
-            }}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              index === 0 ? 'bg-blue-600 w-6' : 'bg-slate-300 hover:bg-slate-400'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+          <button 
+            onClick={scrollRight} 
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          <div 
+            ref={sliderRef} 
+            className="flex gap-6 overflow-x-auto pb-8 cursor-grab active:cursor-grabbing no-scrollbar"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {duplicatedProducts.map((product, index) => {
+              const gradientColor = getGradientColor(index % products.length);
+              return (
+                <div 
+                  key={`${product._id}-${index}`} 
+                  onClick={(e) => handleClick(product._id, e)} 
+                  className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradientColor} opacity-10`} />
+                    <img 
+                      src={product.images?.[0] || "/placeholder.jpg"} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      loading="lazy" 
+                      draggable="false"
+                    />
+                    {product.discount > 0 && (
+                      <div className="absolute top-4 right-4">
+                        <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow-lg">
+                          {product.discount}% OFF
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-xl font-bold text-slate-900 line-clamp-1">{product.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm text-slate-600 font-medium">4.8</span>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-600 text-sm line-clamp-2 mb-4">{product.description}</p>
+
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
+                          {product.discount > 0 && (
+                            <span className="text-sm text-slate-400 line-through">
+                              ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Package className="w-3 h-3 text-slate-400" />
+                          <span className="text-xs text-slate-500">Free shipping</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl font-semibold hover:scale-105 transition-all">
+                        View Details
+                      </button>
+                      <button className="px-4 py-3 bg-gradient-to-br from-slate-100 to-white text-slate-900 rounded-xl font-semibold border border-slate-200 hover:shadow-lg transition-all">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+        </div>
+
+        <div className="flex justify-center items-center gap-6 mt-8">
+          <div className="flex gap-2">
+            {products.slice(0, Math.min(6, products.length)).map((_, index) => (
+              <button 
+                key={index} 
+                onClick={() => scrollToIndex(index)} 
+                className={`w-3 h-3 rounded-full transition-all ${
+                  currentIndex === index 
+                    ? "bg-gradient-to-r from-blue-900 to-indigo-900 w-8" 
+                    : "bg-slate-300 hover:bg-slate-400"
+                }`} 
+              />
+            ))}
+          </div>
+          <div className="text-sm font-medium bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
+            {currentIndex + 1} / {products.length}
+          </div>
+        </div>
       </div>
 
       <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-          height: 0;
+        .grabbing { 
+          cursor: grabbing !important; 
+          user-select: none; 
         }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-          scroll-behavior: smooth;
+        .no-scrollbar { 
+          -ms-overflow-style: none; 
+          scrollbar-width: none; 
         }
-        .grabbing {
-          cursor: grabbing !important;
-          user-select: none;
-        }
-        .grabbing * {
-          cursor: grabbing !important;
+        .no-scrollbar::-webkit-scrollbar { 
+          display: none; 
         }
       `}</style>
     </div>
   );
 };
 
+
+
+
+
+
+
+
+const AllProducts = ({ products = [] }) => {
+  const navigate = useNavigate();
+
+  if (products.length === 0) return null;
+
+  return (
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Package className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Products</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Browse All Products
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Explore our complete collection of aquatic products
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12">
+          {products.slice(0, 8).map((product) => (
+            <div
+              key={product._id}
+              onClick={() => navigate(`/product/${product._id}`)}
+              className="bg-gradient-to-b from-slate-50 to-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+            >
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={product.image || '/placeholder.jpg'}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                />
+                {product.discount > 0 && (
+                  <div className="absolute top-4 left-4 bg-gradient-to-r from-red-600 to-pink-600 px-4 py-1.5 rounded-full">
+                    <span className="text-white font-bold text-sm">
+                      {product.discount}% OFF
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-1">
+                  {product.name}
+                </h3>
+                <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                  {product.description}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xl font-bold text-slate-900">
+                      ₹{product.price}
+                    </span>
+                    {product.discount > 0 && (
+                      <span className="text-slate-400 line-through text-sm ml-2">
+                        ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
+                      </span>
+                    )}
+                  </div>
+                  <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300">
+                    View
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <button
+            onClick={() => navigate('/products')}
+            className="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-br from-slate-900 to-blue-900 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            View All Products
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function HomePage() {
-  const [homeData, setHomeData] = useState({
-    categories: [],
-    featuredProducts: []
-  });
+  const [homeData, setHomeData] = useState({ categories: [], featuredProducts: [], allProducts: [] });
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showPortfolioSkeleton, setShowPortfolioSkeleton] = useState(true);
 
-  // Add debug logging
   useEffect(() => {
     console.log('Base URL:', baseurl);
     console.log('Portfolio API URL:', `${baseurl}user/featured-portfolios`);
@@ -737,16 +973,12 @@ export default function HomePage() {
   useEffect(() => {
     const fetchEssentialData = async () => {
       const cached = getCachedData('aquatic_home_essential');
-      
       if (cached) {
         setHomeData(cached);
         setInitialLoadComplete(true);
-        
         setTimeout(async () => {
           try {
-            const { data } = await axios.get(`${baseurl}user/home-data`, {
-              timeout: 2000
-            });
+            const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 2000 });
             if (data.success) {
               setHomeData(data.data);
               setCachedData('aquatic_home_essential', data.data);
@@ -755,16 +987,12 @@ export default function HomePage() {
             console.log('Background refresh failed');
           }
         }, 0);
-        
         setLoading(false);
         return;
       }
 
       try {
-        const response = await axios.get(`${baseurl}user/home-data`, {
-          timeout: 1500
-        });
-        
+        const response = await axios.get(`${baseurl}user/home-data`, { timeout: 1500 });
         if (response.data.success) {
           setHomeData(response.data.data);
           setCachedData('aquatic_home_essential', response.data.data);
@@ -772,14 +1000,13 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error('Home data fetch failed:', error.message);
-        setHomeData({ categories: [], featuredProducts: [] });
+        setHomeData({ categories: [], featuredProducts: [], allProducts: [] });
       } finally {
         setLoading(false);
       }
     };
 
     fetchEssentialData();
-
     if (performance.mark) {
       performance.mark('homepage_start');
     }
@@ -787,23 +1014,19 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!initialLoadComplete) return;
-  
+
     const fetchPortfolios = async () => {
       const cached = getCachedData('aquatic_portfolios');
-      
       setShowPortfolioSkeleton(false);
       
       if (cached) {
         setPortfolios(cached);
         return;
       }
-  
+
       try {
         console.log('Fetching portfolios from:', `${baseurl}user/featured-portfolios`);
-        const response = await axios.get(`${baseurl}user/featured-portfolios`, {
-          timeout: 1000
-        });
-        
+        const response = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 1000 });
         if (response.data.success) {
           setPortfolios(response.data.portfolios || []);
           setCachedData('aquatic_portfolios', response.data.portfolios);
@@ -813,17 +1036,12 @@ export default function HomePage() {
         setPortfolios([]);
       }
     };
-  
+
     fetchPortfolios();
   }, [initialLoadComplete]);
 
   useEffect(() => {
-    AOS.init({ 
-      duration: 600, 
-      once: true, 
-      offset: 50, 
-      disable: 'mobile' 
-    });
+    AOS.init({ duration: 600, once: true, offset: 50, disable: 'mobile' });
   }, []);
 
   useEffect(() => {
@@ -833,7 +1051,6 @@ export default function HomePage() {
       preloadLink.as = 'image';
       preloadLink.href = homeData.categories[0].image;
       document.head.appendChild(preloadLink);
-      
       return () => {
         if (preloadLink.parentNode) {
           preloadLink.parentNode.removeChild(preloadLink);
@@ -853,7 +1070,6 @@ export default function HomePage() {
           }
         });
       };
-      
       const timer = setTimeout(preloadImages, 1000);
       return () => clearTimeout(timer);
     }
@@ -863,7 +1079,7 @@ export default function HomePage() {
     <div className="bg-white">
       <Navbar />
       <Hero />
-
+      
       <section data-aos="fade-up">
         {loading && homeData.categories.length === 0 ? (
           <CategorySkeleton />
@@ -871,43 +1087,58 @@ export default function HomePage() {
           <CategoryComponent categories={homeData.categories} />
         )}
       </section>
-
+      
       <section data-aos="fade-up">
         <Services />
       </section>
-
+      
       <section data-aos="fade-up">
         <WhyChooseUs />
       </section>
-
+      
       {showPortfolioSkeleton ? (
-        <div className="w-full py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
-              <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
+        <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <div className="h-8 bg-slate-700 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+              <div className="h-12 bg-slate-700 rounded w-96 mx-auto mb-4 animate-pulse"></div>
+              <div className="h-6 bg-slate-700 rounded w-64 mx-auto animate-pulse"></div>
             </div>
-            <div className="h-[400px] bg-slate-200 rounded-3xl animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-slate-800 rounded-2xl overflow-hidden animate-pulse">
+                  <div className="h-64 bg-slate-700"></div>
+                  <div className="p-6">
+                    <div className="h-6 bg-slate-700 rounded mb-3"></div>
+                    <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : portfolios.length > 0 ? (
         <section data-aos="fade-up">
-          <OurProjects portfolios={portfolios} />
+          <OurProjects />
         </section>
       ) : null}
-
-      <section data-aos="fade-up">
-        <FAQ />
-      </section>
-
+      
       <section data-aos="fade-up">
         <Testimonials />
       </section>
-
+      
+      <section data-aos="fade-up">
+        <FAQ />
+      </section>
+      
       <section data-aos="fade-up">
         <FeaturedProducts products={homeData.featuredProducts} />
       </section>
-
+      
+      <section data-aos="fade-up">
+        <AllProducts products={homeData.allProducts} />
+      </section>
+      
       <Footer />
     </div>
   );

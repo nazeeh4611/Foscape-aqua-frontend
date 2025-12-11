@@ -17,7 +17,7 @@ import AOS from 'aos';
 import { baseurl } from '../Base/Base';
 
 const CACHE_KEY = 'portfolios_featured';
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const CACHE_DURATION = 15 * 60 * 1000;
 
 const getPersistentCache = (key) => {
   try {
@@ -58,7 +58,6 @@ const OurProjects = () => {
       setLoading(true);
       setError(null);
 
-      // 1️⃣ Try cache first – show something immediately if available
       const cached = getPersistentCache(CACHE_KEY);
       if (cached && Array.isArray(cached) && cached.length > 0) {
         console.log('Using cached portfolios:', cached.length);
@@ -68,7 +67,6 @@ const OurProjects = () => {
 
       console.log('Fetching portfolios from API:', `${baseurl}user/portfolios/featured`);
 
-      // 2️⃣ Simple fetch (NO manual 15s abort timeout – this was breaking on mobile / cold starts)
       const controller = new AbortController();
 
       const response = await axios.get(`${baseurl}user/portfolios/featured`, {
@@ -95,7 +93,6 @@ const OurProjects = () => {
     } catch (error) {
       console.error('Error fetching portfolios:', error);
 
-      // Try to use cached data as fallback
       const cached = getPersistentCache(CACHE_KEY);
       if (cached && Array.isArray(cached) && cached.length > 0) {
         console.log('Using cached data as fallback');
@@ -163,7 +160,6 @@ const OurProjects = () => {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  // Loading state
   if (loading && (!portfolios || portfolios.length === 0)) {
     return (
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
@@ -189,7 +185,6 @@ const OurProjects = () => {
     );
   }
 
-  // Error state with retry
   if (error && (!portfolios || portfolios.length === 0)) {
     return (
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
@@ -209,7 +204,6 @@ const OurProjects = () => {
     );
   }
 
-  // Empty state
   if (!portfolios || portfolios.length === 0) {
     return (
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
@@ -228,7 +222,6 @@ const OurProjects = () => {
     <>
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-16" >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 mb-6">
               <Sparkles className="w-4 h-4 text-blue-400" />
@@ -242,7 +235,6 @@ const OurProjects = () => {
             </p>
           </div>
 
-          {/* Grid Cards Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {portfolios.map((portfolio, index) => (
               <div
@@ -250,7 +242,6 @@ const OurProjects = () => {
                 onClick={(e) => openModal(portfolio, e)}
                 className="group relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]"
               >
-                {/* Image Container */}
                 <div className="relative h-72 overflow-hidden">
                   <img
                     src={portfolio.mediaUrls?.[0] || '/placeholder.jpg'}
@@ -260,14 +251,12 @@ const OurProjects = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
-                  {/* Multiple images indicator */}
                   {portfolio.mediaUrls?.length > 1 && (
                     <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-sm font-medium">
                       +{portfolio.mediaUrls.length - 1} more
                     </div>
                   )}
 
-                  {/* Category Badge */}
                   <div
                     className={`absolute top-4 left-4 bg-gradient-to-r ${getCategoryGradient(
                       portfolio.category
@@ -282,7 +271,6 @@ const OurProjects = () => {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="p-6">
                   <div className="flex items-center gap-4 mb-4 text-sm text-slate-400">
                     {portfolio.location && (
@@ -307,7 +295,6 @@ const OurProjects = () => {
                     {portfolio.description || 'No description available'}
                   </p>
 
-                  {/* Project Meta */}
                   <div className="space-y-2 mb-4 text-sm">
                     {portfolio.client && (
                       <div className="flex items-center gap-2 text-slate-400">
@@ -341,7 +328,6 @@ const OurProjects = () => {
             ))}
           </div>
 
-          {/* View All Button */}
           <div className="text-center">
             <button
               onClick={() => navigate('/works')}
@@ -354,7 +340,6 @@ const OurProjects = () => {
         </div>
       </div>
 
-      {/* Project Detail Modal */}
       {selectedPortfolio && !fullscreenImage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
@@ -364,7 +349,6 @@ const OurProjects = () => {
             onClick={(e) => e.stopPropagation()}
             className="bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
-            {/* Modal Header */}
             <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-white">{selectedPortfolio.name}</h2>
               <button
@@ -375,7 +359,6 @@ const OurProjects = () => {
               </button>
             </div>
 
-            {/* Main Image with Navigation */}
             <div className="relative">
             <img
             src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
@@ -413,7 +396,6 @@ const OurProjects = () => {
               )}
             </div>
 
-            {/* All Images Thumbnail Strip */}
             {selectedPortfolio.mediaUrls?.length > 1 && (
               <div className="p-6 border-b border-slate-700">
                 <h3 className="text-sm font-semibold text-slate-400 mb-3">
@@ -439,14 +421,12 @@ const OurProjects = () => {
               </div>
             )}
 
-            {/* Project Details */}
             <div className="p-6 space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Project Description</h3>
                 <p className="text-slate-300">{selectedPortfolio.description}</p>
               </div>
 
-              {/* Project Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPortfolio.client && (
                   <div className="bg-slate-800 p-4 rounded-xl">
@@ -496,7 +476,6 @@ const OurProjects = () => {
         </div>
       )}
 
-      {/* Fullscreen Image View */}
       {fullscreenImage && selectedPortfolio && (
         <div
           className="fixed inset-0 z-[60] bg-black flex items-center justify-center"

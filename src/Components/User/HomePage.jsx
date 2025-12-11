@@ -10,6 +10,7 @@ import 'aos/dist/aos.css';
 import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
+
 const CACHE_DURATION = 30 * 60 * 1000;
 
 const getCachedData = (key) => {
@@ -51,7 +52,7 @@ const CategorySkeleton = () => (
   </div>
 );
 
-const CategoryComponent = ({ categories = [] }) => {
+const CategoryComponent = ({ categories = [], loading = false }) => {
   const [activeCategory, setActiveCategory] = useState('');
   const [categoryDetails, setCategoryDetails] = useState({});
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -77,7 +78,7 @@ const CategoryComponent = ({ categories = [] }) => {
 
       setLoadingDetails(true);
       try {
-        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, { timeout: 1500 });
+        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, { timeout: 5000 });
         if (response.data.success) {
           const details = response.data.data;
           setCategoryDetails(prev => ({ ...prev, [activeCategory]: details }));
@@ -114,6 +115,7 @@ const CategoryComponent = ({ categories = [] }) => {
     return category ? { ...category, ...details } : null;
   }, [categories, activeCategory, categoryDetails]);
 
+  if (loading) return <CategorySkeleton />;
   if (categories.length === 0) return null;
 
   return (
@@ -485,7 +487,10 @@ const Testimonials = () => {
   );
 };
 
-const FeaturedProducts = ({ products = [] }) => {
+
+
+
+const FeaturedProducts = ({ products = [], loading = false }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const containerRef = useRef(null);
@@ -494,6 +499,7 @@ const FeaturedProducts = ({ products = [] }) => {
   const autoSlideIntervalRef = useRef(null);
   const isHoveringRef = useRef(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
 
   const AUTO_SLIDE_SPEED = 5;
   const CARD_WIDTH = 320;
@@ -511,12 +517,15 @@ const FeaturedProducts = ({ products = [] }) => {
     const singleSetWidth = totalWidth * products.length;
     let scrollPos = slider.scrollLeft;
     
-    // Normalize scroll position to single set
-    while (scrollPos >= singleSetWidth * 2) scrollPos -= singleSetWidth;
-    while (scrollPos < singleSetWidth) scrollPos += singleSetWidth;
+    if (scrollPos >= singleSetWidth * 2) {
+      scrollPos -= singleSetWidth;
+    }
+    if (scrollPos < singleSetWidth) {
+      scrollPos += singleSetWidth;
+    }
     
     const newIndex = Math.round((scrollPos - singleSetWidth) / totalWidth);
-    const normalizedIndex = ((newIndex % products.length) + products.length) % products.length;
+    const normalizedIndex = Math.max(0, Math.min(newIndex, products.length - 1));
     setCurrentIndex(normalizedIndex);
   }, [products.length]);
 
@@ -532,13 +541,13 @@ const FeaturedProducts = ({ products = [] }) => {
       const totalWidth = CARD_WIDTH + CARD_GAP;
       const singleSetWidth = totalWidth * products.length;
       
-      // Reset position when reaching end of second set
       if (slider.scrollLeft >= singleSetWidth * 2.5) {
-        slider.scrollLeft = singleSetWidth + (slider.scrollLeft % singleSetWidth);
+        const offset = slider.scrollLeft - (singleSetWidth * 2);
+        slider.scrollLeft = singleSetWidth + offset - 50;
       }
       
       updateCurrentIndex();
-    }, 20);
+    }, 16);
   }, [products.length, updateCurrentIndex]);
 
   const stopAutoSlide = useCallback(() => {
@@ -555,7 +564,9 @@ const FeaturedProducts = ({ products = [] }) => {
 
   const handleMouseLeave = useCallback(() => {
     isHoveringRef.current = false;
-    startAutoSlide();
+    if (!isDraggingRef.current) {
+      startAutoSlide();
+    }
   }, [startAutoSlide]);
 
   const handleDragStart = useCallback((e) => {
@@ -593,15 +604,18 @@ const FeaturedProducts = ({ products = [] }) => {
     const totalWidth = CARD_WIDTH + CARD_GAP;
     const singleSetWidth = totalWidth * products.length;
     
-    // Snap to middle set if outside bounds
-    if (slider.scrollLeft < singleSetWidth * 0.5) {
+    if (slider.scrollLeft < singleSetWidth) {
       slider.scrollLeft += singleSetWidth;
-    } else if (slider.scrollLeft >= singleSetWidth * 2.5) {
+    } else if (slider.scrollLeft >= singleSetWidth * 2) {
       slider.scrollLeft -= singleSetWidth;
     }
     
     updateCurrentIndex();
-    setTimeout(() => startAutoSlide(), 500);
+    setTimeout(() => {
+      if (!isHoveringRef.current) {
+        startAutoSlide();
+      }
+    }, 500);
   }, [products.length, startAutoSlide, updateCurrentIndex]);
 
   const scrollToIndex = useCallback((index) => {
@@ -611,10 +625,16 @@ const FeaturedProducts = ({ products = [] }) => {
     stopAutoSlide();
     const totalWidth = CARD_WIDTH + CARD_GAP;
     const singleSetWidth = totalWidth * products.length;
-    slider.scrollTo({ left: singleSetWidth + index * totalWidth, behavior: "smooth" });
+    
+    const targetScroll = singleSetWidth + (index * totalWidth);
+    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
     setCurrentIndex(index);
     
-    setTimeout(() => startAutoSlide(), 800);
+    setTimeout(() => {
+      if (!isHoveringRef.current) {
+        startAutoSlide();
+      }
+    }, 800);
   }, [products.length, startAutoSlide, stopAutoSlide]);
 
   const scrollLeft = useCallback(() => {
@@ -623,13 +643,24 @@ const FeaturedProducts = ({ products = [] }) => {
     
     stopAutoSlide();
     const totalWidth = CARD_WIDTH + CARD_GAP;
-    slider.scrollBy({ left: -totalWidth, behavior: "smooth" });
+    const singleSetWidth = totalWidth * products.length;
+    
+    const currentScroll = slider.scrollLeft;
+    let targetScroll = currentScroll - totalWidth;
+    
+    if (targetScroll < singleSetWidth) {
+      targetScroll += singleSetWidth;
+    }
+    
+    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
     
     setTimeout(() => {
       updateCurrentIndex();
-      startAutoSlide();
+      if (!isHoveringRef.current) {
+        startAutoSlide();
+      }
     }, 600);
-  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex]);
+  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex, products.length]);
 
   const scrollRight = useCallback(() => {
     const slider = sliderRef.current;
@@ -637,22 +668,36 @@ const FeaturedProducts = ({ products = [] }) => {
     
     stopAutoSlide();
     const totalWidth = CARD_WIDTH + CARD_GAP;
-    slider.scrollBy({ left: totalWidth, behavior: "smooth" });
+    const singleSetWidth = totalWidth * products.length;
+    
+    const currentScroll = slider.scrollLeft;
+    let targetScroll = currentScroll + totalWidth;
+    
+    if (targetScroll >= singleSetWidth * 2) {
+      targetScroll -= singleSetWidth;
+    }
+    
+    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
     
     setTimeout(() => {
       updateCurrentIndex();
-      startAutoSlide();
+      if (!isHoveringRef.current) {
+        startAutoSlide();
+      }
     }, 600);
-  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex]);
+  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex, products.length]);
 
-  // Initialize scroll position and start auto-slide
   useEffect(() => {
-    if (products.length && sliderRef.current) {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && products.length && sliderRef.current) {
       const totalWidth = CARD_WIDTH + CARD_GAP;
       const singleSetWidth = totalWidth * products.length;
+      
       sliderRef.current.scrollLeft = singleSetWidth;
       
-      // Start auto-slide after initial render
       const timer = setTimeout(() => {
         startAutoSlide();
       }, 1000);
@@ -662,9 +707,8 @@ const FeaturedProducts = ({ products = [] }) => {
         stopAutoSlide();
       };
     }
-  }, [products.length, startAutoSlide, stopAutoSlide]);
+  }, [products.length, startAutoSlide, stopAutoSlide, isMounted]);
 
-  // Set up event listeners
   useEffect(() => {
     const slider = sliderRef.current;
     const container = containerRef.current;
@@ -673,6 +717,15 @@ const FeaturedProducts = ({ products = [] }) => {
     const handleScroll = () => {
       if (!isDraggingRef.current) {
         updateCurrentIndex();
+        
+        const totalWidth = CARD_WIDTH + CARD_GAP;
+        const singleSetWidth = totalWidth * products.length;
+        
+        if (slider.scrollLeft < singleSetWidth * 0.5) {
+          slider.scrollLeft += singleSetWidth;
+        } else if (slider.scrollLeft > singleSetWidth * 2.5) {
+          slider.scrollLeft -= singleSetWidth;
+        }
       }
     };
 
@@ -702,13 +755,38 @@ const FeaturedProducts = ({ products = [] }) => {
   }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateCurrentIndex, products.length]);
 
   const handleClick = useCallback((id, e) => {
-    // Prevent navigation if dragging
     if (isDraggingRef.current || Math.abs(e.currentTarget.getBoundingClientRect().left - startPosRef.current.x) > 5) {
       e.preventDefault();
       return;
     }
     navigate(`/product/${id}`);
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-8 bg-slate-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-10 bg-slate-200 rounded w-64 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-6 bg-slate-200 rounded w-96 mx-auto animate-pulse"></div>
+          </div>
+          <div className="flex gap-6 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden animate-pulse">
+                <div className="h-48 bg-slate-200"></div>
+                <div className="p-6">
+                  <div className="h-6 bg-slate-200 rounded mb-3"></div>
+                  <div className="h-4 bg-slate-200 rounded mb-4"></div>
+                  <div className="h-8 bg-slate-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!products.length) return null;
 
@@ -869,10 +947,6 @@ const FeaturedProducts = ({ products = [] }) => {
 
 
 
-
-
-
-
 const AllProducts = ({ products = [] }) => {
   const navigate = useNavigate();
 
@@ -961,7 +1035,8 @@ const AllProducts = ({ products = [] }) => {
 export default function HomePage() {
   const [homeData, setHomeData] = useState({ categories: [], featuredProducts: [], allProducts: [] });
   const [portfolios, setPortfolios] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showPortfolioSkeleton, setShowPortfolioSkeleton] = useState(true);
 
@@ -975,10 +1050,13 @@ export default function HomePage() {
       const cached = getCachedData('aquatic_home_essential');
       if (cached) {
         setHomeData(cached);
+        setLoadingCategories(false);
+        setLoadingProducts(false);
         setInitialLoadComplete(true);
+        
         setTimeout(async () => {
           try {
-            const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 2000 });
+            const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 5000 });
             if (data.success) {
               setHomeData(data.data);
               setCachedData('aquatic_home_essential', data.data);
@@ -987,12 +1065,11 @@ export default function HomePage() {
             console.log('Background refresh failed');
           }
         }, 0);
-        setLoading(false);
         return;
       }
 
       try {
-        const response = await axios.get(`${baseurl}user/home-data`, { timeout: 1500 });
+        const response = await axios.get(`${baseurl}user/home-data`, { timeout: 5000 });
         if (response.data.success) {
           setHomeData(response.data.data);
           setCachedData('aquatic_home_essential', response.data.data);
@@ -1002,7 +1079,8 @@ export default function HomePage() {
         console.error('Home data fetch failed:', error.message);
         setHomeData({ categories: [], featuredProducts: [], allProducts: [] });
       } finally {
-        setLoading(false);
+        setLoadingCategories(false);
+        setLoadingProducts(false);
       }
     };
 
@@ -1026,7 +1104,7 @@ export default function HomePage() {
 
       try {
         console.log('Fetching portfolios from:', `${baseurl}user/featured-portfolios`);
-        const response = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 1000 });
+        const response = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 3000 });
         if (response.data.success) {
           setPortfolios(response.data.portfolios || []);
           setCachedData('aquatic_portfolios', response.data.portfolios);
@@ -1081,11 +1159,7 @@ export default function HomePage() {
       <Hero />
       
       <section data-aos="fade-up">
-        {loading && homeData.categories.length === 0 ? (
-          <CategorySkeleton />
-        ) : (
-          <CategoryComponent categories={homeData.categories} />
-        )}
+        <CategoryComponent categories={homeData.categories} loading={loadingCategories} />
       </section>
       
       <section data-aos="fade-up">
@@ -1132,7 +1206,7 @@ export default function HomePage() {
       </section>
       
       <section data-aos="fade-up">
-        <FeaturedProducts products={homeData.featuredProducts} />
+        <FeaturedProducts products={homeData.featuredProducts} loading={loadingProducts} />
       </section>
       
       <section data-aos="fade-up">

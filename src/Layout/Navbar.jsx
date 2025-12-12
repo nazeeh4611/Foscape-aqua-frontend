@@ -177,7 +177,7 @@ const getHeadingColor = () => {
       
       <div className="flex items-center cursor-pointer select-none" onClick={handleLogoClick}>
         <img
-          src={logo}
+          src="/logo.webp"
           alt="Logo"
           className="w-auto h-16 object-contain transition-all duration-300"
         />

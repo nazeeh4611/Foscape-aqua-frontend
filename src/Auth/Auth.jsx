@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }) => {
         setIsLogged(true);
       }
     } catch (error) {
-      console.error("Auth check error:", error);
       localStorage.removeItem("token");
       setUser(null);
       setIsLogged(false);
@@ -39,6 +38,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     setUser(userData);
     setIsLogged(true);
+    setLoading(false);
   };
 
   const logout = async () => {
@@ -55,6 +55,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    const handleStorageChange = () => {
+      checkAuthStatus();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   return (

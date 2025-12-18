@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Layout/Navbar';
 import Hero from '../../Layout/Hero';
@@ -10,29 +10,58 @@ import 'aos/dist/aos.css';
 import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
 
+const createCache = () => {
+  const cache = new Map();
+  const timestamps = new Map();
+  const CACHE_DURATION = 5 * 60 * 1000;
 
-const CACHE_DURATION = 30 * 60 * 1000;
-
-const getCachedData = (key) => {
-  try {
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      localStorage.removeItem(key);
+  return {
+    get: (key) => {
+      const cached = cache.get(key);
+      const timestamp = timestamps.get(key);
+      
+      if (cached && timestamp && Date.now() - timestamp < CACHE_DURATION) {
+        return cached;
+      }
+      
+      if (timestamp && Date.now() - timestamp >= CACHE_DURATION) {
+        cache.delete(key);
+        timestamps.delete(key);
+      }
+      
       return null;
+    },
+    
+    set: (key, data) => {
+      cache.set(key, data);
+      timestamps.set(key, Date.now());
+      return data;
+    },
+    
+    clear: () => {
+      cache.clear();
+      timestamps.clear();
     }
-    return data;
-  } catch {
-    return null;
-  }
+  };
 };
 
-const setCachedData = (key, data) => {
+const cache = createCache();
+
+const fetchWithRetry = async (url, options = {}, retries = 2) => {
   try {
-    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+    const response = await axios({
+      url,
+      timeout: 10000,
+      ...options
+    });
+    return response.data;
   } catch (error) {
-    console.warn('Cache failed:', error);
+    if (retries > 0) {
+      console.log(`Retrying ${url}, attempts left: ${retries}`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
   }
 };
 
@@ -49,6 +78,22 @@ const CategorySkeleton = () => (
         ))}
       </div>
     </div>
+  </div>
+);
+
+const ProductSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {[...Array(6)].map((_, i) => (
+      <div key={i} className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
+        <div className="h-48 bg-slate-200"></div>
+        <div className="p-5 space-y-3">
+          <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+          <div className="h-4 bg-slate-200 rounded w-full"></div>
+          <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+          <div className="h-10 bg-slate-200 rounded-xl mt-4"></div>
+        </div>
+      </div>
+    ))}
   </div>
 );
 
@@ -70,7 +115,7 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
     const loadCategoryDetails = async () => {
       if (categoryDetails[activeCategory]?.description) return;
 
-      const cached = getCachedData(`category_detail_${activeCategory}`);
+      const cached = cache.get(`category_detail_${activeCategory}`);
       if (cached) {
         setCategoryDetails(prev => ({ ...prev, [activeCategory]: cached }));
         return;
@@ -82,7 +127,7 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
         if (response.data.success) {
           const details = response.data.data;
           setCategoryDetails(prev => ({ ...prev, [activeCategory]: details }));
-          setCachedData(`category_detail_${activeCategory}`, details);
+          cache.set(`category_detail_${activeCategory}`, details);
         }
       } catch (error) {
         console.error('Error loading category details:', error);
@@ -232,263 +277,6 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
     </div>
   );
 };
-
-const Services = () => {
-  const navigate = useNavigate();
-  const services = [
-    {
-      icon: <Package className="w-8 h-8" />,
-      title: "Premium Quality",
-      description: "Hand-selected aquatic life and equipment from trusted sources",
-      gradient: "from-blue-500 to-cyan-500"
-    },
-    {
-      icon: <Truck className="w-8 h-8" />,
-      title: "Fast Delivery",
-      description: "Safe and secure shipping with temperature-controlled packaging",
-      gradient: "from-emerald-500 to-teal-500"
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Health Guarantee",
-      description: "All products come with our comprehensive health guarantee",
-      gradient: "from-purple-500 to-pink-500"
-    },
-    {
-      icon: <Clock className="w-8 h-8" />,
-      title: "24/7 Support",
-      description: "Expert assistance available around the clock for all your needs",
-      gradient: "from-orange-500 to-red-500"
-    }
-  ];
-
-  return (
-    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
-            <CheckCircle className="w-4 h-4 text-blue-600" />
-            <span className="text-blue-600 font-medium">Our Services</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Comprehensive Solutions
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            For all your aquatic needs
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {services.map((service, index) => (
-            <div
-              key={index}
-              onClick={() => navigate('/service')}
-              className="group bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
-            >
-              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                {service.icon}
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                {service.title}
-              </h3>
-              <p className="text-slate-600">
-                {service.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const WhyChooseUs = () => {
-  const reasons = [
-    {
-      icon: <Fish className="w-6 h-6" />,
-      title: "Expert Knowledge",
-      description: "Over 15 years of experience in aquatic life care"
-    },
-    {
-      icon: <Package className="w-6 h-6" />,
-      title: "Best Prices",
-      description: "Competitive pricing without compromising quality"
-    },
-    {
-      icon: <Truck className="w-6 h-6" />,
-      title: "Wide Selection",
-      description: "Extensive range of products for all your needs"
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Customer First",
-      description: "Your satisfaction is our top priority"
-    }
-  ];
-
-  return (
-    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
-            <Star className="w-4 h-4 text-blue-600" />
-            <span className="text-blue-600 font-medium">Why Choose Us</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            The Preferred Choice
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Discover what makes us the preferred choice for aquatic enthusiasts
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {reasons.map((reason, index) => (
-            <div
-              key={index}
-              className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-6">
-                {reason.icon}
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                {reason.title}
-              </h3>
-              <p className="text-slate-600">
-                {reason.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const FAQ = () => {
-  const [openIndex, setOpenIndex] = useState(null);
-  const faqs = [
-    {
-      question: "What is your shipping policy?",
-      answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe."
-    },
-    {
-      question: "Do you offer a health guarantee?",
-      answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery."
-    },
-    {
-      question: "How do I care for my new fish?",
-      answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions."
-    },
-    {
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay."
-    },
-    {
-      question: "Can I return or exchange products?",
-      answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy."
-    }
-  ];
-
-  return (
-    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
-            <span className="text-blue-600 font-medium">FAQ</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Find answers to common questions about our products and services
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {faqs.map((faq, index) => (
-            <div key={index} className="border-b border-slate-100 last:border-b-0">
-              <button
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-6 text-left hover:bg-slate-100 transition-colors duration-300"
-              >
-                <span className="text-lg font-semibold text-slate-900">{faq.question}</span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
-              </button>
-              {openIndex === index && (
-                <div className="px-6 pb-6">
-                  <p className="text-slate-600">{faq.answer}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Testimonials = () => {
-  const testimonials = [
-    {
-      name: "John Smith",
-      role: "Aquarium Enthusiast",
-      content: "Excellent quality products and outstanding customer service. My fish are thriving!",
-      rating: 5
-    },
-    {
-      name: "Sarah Johnson",
-      role: "Pet Store Owner",
-      content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.",
-      rating: 5
-    },
-    {
-      name: "Mike Chen",
-      role: "First-time Buyer",
-      content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.",
-      rating: 5
-    }
-  ];
-
-  return (
-    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
-            <Star className="w-4 h-4 text-blue-600" />
-            <span className="text-blue-600 font-medium">Testimonials</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            What Our Clients Say
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Read what our satisfied customers have to say about their experience
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg">
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                ))}
-              </div>
-              <p className="text-slate-700 italic mb-6">"{testimonial.content}"</p>
-              <div>
-                <p className="font-bold text-slate-900">{testimonial.name}</p>
-                <p className="text-slate-600">{testimonial.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-
 
 const FeaturedProducts = ({ products = [], loading = false }) => {
   const navigate = useNavigate();
@@ -944,88 +732,254 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
   );
 };
 
-
-
-
-const AllProducts = ({ products = [] }) => {
+const Services = () => {
   const navigate = useNavigate();
+  const services = [
+    {
+      icon: <Package className="w-8 h-8" />,
+      title: "Premium Quality",
+      description: "Hand-selected aquatic life and equipment from trusted sources",
+      gradient: "from-blue-500 to-cyan-500"
+    },
+    {
+      icon: <Truck className="w-8 h-8" />,
+      title: "Fast Delivery",
+      description: "Safe and secure shipping with temperature-controlled packaging",
+      gradient: "from-emerald-500 to-teal-500"
+    },
+    {
+      icon: <Shield className="w-8 h-8" />,
+      title: "Health Guarantee",
+      description: "All products come with our comprehensive health guarantee",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: <Clock className="w-8 h-8" />,
+      title: "24/7 Support",
+      description: "Expert assistance available around the clock for all your needs",
+      gradient: "from-orange-500 to-red-500"
+    }
+  ];
 
-  if (products.length === 0) return null;
+  return (
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <CheckCircle className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Services</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Comprehensive Solutions
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            For all your aquatic needs
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          {services.map((service, index) => (
+            <div
+              key={index}
+              onClick={() => navigate('/service')}
+              className="group bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+            >
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                {service.icon}
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {service.title}
+              </h3>
+              <p className="text-slate-600">
+                {service.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WhyChooseUs = () => {
+  const reasons = [
+    {
+      icon: <Fish className="w-6 h-6" />,
+      title: "Expert Knowledge",
+      description: "Over 15 years of experience in aquatic life care"
+    },
+    {
+      icon: <Package className="w-6 h-6" />,
+      title: "Best Prices",
+      description: "Competitive pricing without compromising quality"
+    },
+    {
+      icon: <Truck className="w-6 h-6" />,
+      title: "Wide Selection",
+      description: "Extensive range of products for all your needs"
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: "Customer First",
+      description: "Your satisfaction is our top priority"
+    }
+  ];
 
   return (
     <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
-            <Package className="w-4 h-4 text-blue-600" />
-            <span className="text-blue-600 font-medium">Our Products</span>
+            <Star className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Why Choose Us</span>
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Browse All Products
+            The Preferred Choice
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Explore our complete collection of aquatic products
+            Discover what makes us the preferred choice for aquatic enthusiasts
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12">
-          {products.slice(0, 8).map((product) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          {reasons.map((reason, index) => (
             <div
-              key={product._id}
-              onClick={() => navigate(`/product/${product._id}`)}
-              className="bg-gradient-to-b from-slate-50 to-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+              key={index}
+              className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={product.image || '/placeholder.jpg'}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                />
-                {product.discount > 0 && (
-                  <div className="absolute top-4 left-4 bg-gradient-to-r from-red-600 to-pink-600 px-4 py-1.5 rounded-full">
-                    <span className="text-white font-bold text-sm">
-                      {product.discount}% OFF
-                    </span>
-                  </div>
-                )}
+              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-6">
+                {reason.icon}
               </div>
-
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-1">
-                  {product.name}
-                </h3>
-                <p className="text-slate-600 text-sm mb-4 line-clamp-2">
-                  {product.description}
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xl font-bold text-slate-900">
-                      ₹{product.price}
-                    </span>
-                    {product.discount > 0 && (
-                      <span className="text-slate-400 line-through text-sm ml-2">
-                        ₹{(product.price / (1 - product.discount / 100)).toFixed(0)}
-                      </span>
-                    )}
-                  </div>
-                  <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300">
-                    View
-                  </button>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {reason.title}
+              </h3>
+              <p className="text-slate-600">
+                {reason.description}
+              </p>
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+};
 
-        <div className="text-center">
-          <button
-            onClick={() => navigate('/products')}
-            className="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-br from-slate-900 to-blue-900 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            View All Products
-            <ChevronRight className="w-5 h-5" />
-          </button>
+const FAQ = () => {
+  const [openIndex, setOpenIndex] = useState(null);
+  const faqs = [
+    {
+      question: "What is your shipping policy?",
+      answer: "We offer fast and secure shipping with temperature-controlled packaging to ensure your aquatic life arrives healthy and safe."
+    },
+    {
+      question: "Do you offer a health guarantee?",
+      answer: "Yes, all our products come with a comprehensive health guarantee. If there are any issues, please contact us within 24 hours of delivery."
+    },
+    {
+      question: "How do I care for my new fish?",
+      answer: "We provide detailed care instructions with every purchase. Our support team is also available 24/7 to answer any questions."
+    },
+    {
+      question: "What payment methods do you accept?",
+      answer: "We accept all major credit cards, debit cards, and secure online payment methods through Razorpay."
+    },
+    {
+      question: "Can I return or exchange products?",
+      answer: "Returns and exchanges are accepted within 7 days of delivery for equipment. Live aquatic life follows our health guarantee policy."
+    }
+  ];
+
+  return (
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <span className="text-blue-600 font-medium">FAQ</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Find answers to common questions about our products and services
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {faqs.map((faq, index) => (
+            <div key={index} className="border-b border-slate-100 last:border-b-0">
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-slate-100 transition-colors duration-300"
+              >
+                <span className="text-lg font-semibold text-slate-900">{faq.question}</span>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
+              </button>
+              {openIndex === index && (
+                <div className="px-6 pb-6">
+                  <p className="text-slate-600">{faq.answer}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Testimonials = () => {
+  const testimonials = [
+    {
+      name: "John Smith",
+      role: "Aquarium Enthusiast",
+      content: "Excellent quality products and outstanding customer service. My fish are thriving!",
+      rating: 5
+    },
+    {
+      name: "Sarah Johnson",
+      role: "Pet Store Owner",
+      content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.",
+      rating: 5
+    },
+    {
+      name: "Mike Chen",
+      role: "First-time Buyer",
+      content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.",
+      rating: 5
+    }
+  ];
+
+  return (
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Star className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Testimonials</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            What Our Clients Say
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Read what our satisfied customers have to say about their experience
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          {testimonials.map((testimonial, index) => (
+            <div key={index} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg">
+              <div className="flex gap-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-slate-700 italic mb-6">"{testimonial.content}"</p>
+              <div>
+                <p className="font-bold text-slate-900">{testimonial.name}</p>
+                <p className="text-slate-600">{testimonial.role}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1033,125 +987,142 @@ const AllProducts = ({ products = [] }) => {
 };
 
 export default function HomePage() {
-  const [homeData, setHomeData] = useState({ categories: [], featuredProducts: [], allProducts: [] });
-  const [portfolios, setPortfolios] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [showPortfolioSkeleton, setShowPortfolioSkeleton] = useState(true);
+  const [homeData, setHomeData] = useState({ 
+    categories: [], 
+    featuredProducts: [] 
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    console.log('Base URL:', baseurl);
-    console.log('Portfolio API URL:', `${baseurl}user/featured-portfolios`);
-  }, []);
-
-  useEffect(() => {
-    const fetchEssentialData = async () => {
-      const cached = getCachedData('aquatic_home_essential');
-      if (cached) {
-        setHomeData(cached);
-        setLoadingCategories(false);
-        setLoadingProducts(false);
-        setInitialLoadComplete(true);
-        
-        setTimeout(async () => {
-          try {
-            const { data } = await axios.get(`${baseurl}user/home-data`, { timeout: 5000 });
+  const prefetchData = () => {
+    setTimeout(() => {
+      const categoriesKey = 'prefetch_categories';
+      if (!cache.get(categoriesKey)) {
+        fetchWithRetry(`${baseurl}user/category`, {}, 1)
+          .then(data => {
             if (data.success) {
-              setHomeData(data.data);
-              setCachedData('aquatic_home_essential', data.data);
+              cache.set(categoriesKey, data.categories);
             }
-          } catch (err) {
-            console.log('Background refresh failed');
-          }
-        }, 0);
-        return;
+          })
+          .catch(() => {});
       }
-
-      try {
-        const response = await axios.get(`${baseurl}user/home-data`, { timeout: 5000 });
-        if (response.data.success) {
-          setHomeData(response.data.data);
-          setCachedData('aquatic_home_essential', response.data.data);
-          setInitialLoadComplete(true);
-        }
-      } catch (error) {
-        console.error('Home data fetch failed:', error.message);
-        setHomeData({ categories: [], featuredProducts: [], allProducts: [] });
-      } finally {
-        setLoadingCategories(false);
-        setLoadingProducts(false);
-      }
-    };
-
-    fetchEssentialData();
-    if (performance.mark) {
-      performance.mark('homepage_start');
-    }
-  }, []);
+    }, 2000);
+  };
 
   useEffect(() => {
-    if (!initialLoadComplete) return;
+    AOS.init({ 
+      duration: 600, 
+      once: true, 
+      offset: 50,
+      disable: window.innerWidth < 768 ? true : false 
+    });
 
-    const fetchPortfolios = async () => {
-      const cached = getCachedData('aquatic_portfolios');
-      setShowPortfolioSkeleton(false);
+    const fetchHomeData = async () => {
+      const cacheKey = 'home_data_v2';
+      const cached = cache.get(cacheKey);
       
       if (cached) {
-        setPortfolios(cached);
+        setHomeData(cached);
+        setLoading(false);
+        
+        setTimeout(() => {
+          fetchFreshData(cacheKey);
+        }, 1000);
+        
         return;
       }
 
+      await fetchFreshData(cacheKey);
+    };
+
+    const fetchFreshData = async (cacheKey) => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        console.log('Fetching portfolios from:', `${baseurl}user/featured-portfolios`);
-        const response = await axios.get(`${baseurl}user/featured-portfolios`, { timeout: 3000 });
-        if (response.data.success) {
-          setPortfolios(response.data.portfolios || []);
-          setCachedData('aquatic_portfolios', response.data.portfolios);
+        const data = await fetchWithRetry(
+          `${baseurl}user/batch-data?include=categories,featured`,
+          {},
+          2
+        );
+        
+        if (data.success) {
+          const formattedData = {
+            categories: data.categories || [],
+            featuredProducts: data.featuredProducts || []
+          };
+          
+          setHomeData(formattedData);
+          cache.set(cacheKey, formattedData);
+          
+          prefetchData();
+        } else {
+          throw new Error('Failed to fetch data');
         }
-      } catch (error) {
-        console.error('Portfolio fetch failed:', error.message);
-        setPortfolios([]);
+      } catch (err) {
+        console.error('Error fetching home data:', err);
+        setError(err.message);
+        
+        if (retryCount < 2) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 2000);
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchPortfolios();
-  }, [initialLoadComplete]);
+    fetchHomeData();
+  }, [retryCount]);
 
-  useEffect(() => {
-    AOS.init({ duration: 600, once: true, offset: 50, disable: 'mobile' });
-  }, []);
+  const handleRetry = () => {
+    setRetryCount(0);
+  };
 
-  useEffect(() => {
-    if (homeData.categories[0]?.image) {
-      const preloadLink = document.createElement('link');
-      preloadLink.rel = 'preload';
-      preloadLink.as = 'image';
-      preloadLink.href = homeData.categories[0].image;
-      document.head.appendChild(preloadLink);
-      return () => {
-        if (preloadLink.parentNode) {
-          preloadLink.parentNode.removeChild(preloadLink);
-        }
-      };
-    }
-  }, [homeData.categories]);
+  if (loading && retryCount === 0) {
+    return (
+      <div className="bg-white min-h-screen">
+        <Navbar />
+        <div className="pt-24">
+          <div className="h-96 bg-slate-200 animate-pulse"></div>
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <CategorySkeleton />
+            <div className="my-12">
+              <div className="h-10 bg-slate-200 rounded w-64 mx-auto mb-8 animate-pulse"></div>
+              <ProductSkeleton />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (portfolios.length > 0) {
-      const preloadImages = () => {
-        portfolios.slice(0, 2).forEach(portfolio => {
-          if (portfolio.mediaUrls?.[0]) {
-            const img = new Image();
-            img.src = portfolio.mediaUrls[0];
-            img.loading = 'eager';
-          }
-        });
-      };
-      const timer = setTimeout(preloadImages, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [portfolios]);
+  if (error && retryCount >= 2) {
+    return (
+      <div className="bg-white min-h-screen flex flex-col items-center justify-center">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-3">Unable to load data</h2>
+            <p className="text-slate-600 mb-6">Please check your connection and try again.</p>
+            <button
+              onClick={handleRetry}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white">
@@ -1159,43 +1130,22 @@ export default function HomePage() {
       <Hero />
       
       <section data-aos="fade-up">
-        <CategoryComponent categories={homeData.categories} loading={loadingCategories} />
+        <CategoryComponent 
+          categories={homeData.categories} 
+          loading={loading && homeData.categories.length === 0}
+        />
       </section>
       
       <section data-aos="fade-up">
         <Services />
       </section>
+      <section data-aos="fade-up">
+        <OurProjects />
+      </section>
       
       <section data-aos="fade-up">
         <WhyChooseUs />
       </section>
-      
-      {showPortfolioSkeleton ? (
-        <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="h-8 bg-slate-700 rounded w-48 mx-auto mb-4 animate-pulse"></div>
-              <div className="h-12 bg-slate-700 rounded w-96 mx-auto mb-4 animate-pulse"></div>
-              <div className="h-6 bg-slate-700 rounded w-64 mx-auto animate-pulse"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-slate-800 rounded-2xl overflow-hidden animate-pulse">
-                  <div className="h-64 bg-slate-700"></div>
-                  <div className="p-6">
-                    <div className="h-6 bg-slate-700 rounded mb-3"></div>
-                    <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : portfolios.length > 0 ? (
-        <section data-aos="fade-up">
-          <OurProjects />
-        </section>
-      ) : null}
       
       <section data-aos="fade-up">
         <Testimonials />
@@ -1206,11 +1156,10 @@ export default function HomePage() {
       </section>
       
       <section data-aos="fade-up">
-        <FeaturedProducts products={homeData.featuredProducts} loading={loadingProducts} />
-      </section>
-      
-      <section data-aos="fade-up">
-        <AllProducts products={homeData.allProducts} />
+        <FeaturedProducts 
+          products={homeData.featuredProducts} 
+          loading={loading && homeData.featuredProducts.length === 0}
+        />
       </section>
       
       <Footer />

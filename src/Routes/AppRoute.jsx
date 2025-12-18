@@ -16,7 +16,7 @@ function AppRoute() {
             <Route path="/admin/*" element={<AdminRoute />} />
           </Routes>
         </ToastProvider>
-      </Router>
+    </Router>
     </>
   )
 }

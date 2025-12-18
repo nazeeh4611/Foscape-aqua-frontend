@@ -6,7 +6,6 @@ import { X, ArrowRight, Mail, Lock, User, Phone, KeyRound } from 'lucide-react';
 import { useToast } from "../../Context.js/ToastContext";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-
 const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -71,39 +70,22 @@ const AuthModal = ({ show, onClose, onRegisterSuccess, onLoginSuccess }) => {
     try {
       const res = await axios.post(`${baseurl}user/login`, { email, password });
       
-      console.log("Login response:", res.data);
-      
-      if (res.data.token) {
+      if (res.data.token && res.data.user) {
         localStorage.setItem("token", res.data.token);
-        console.log("=== LOCALSTORAGE VERIFICATION ===");
-console.log("All localStorage keys:", Object.keys(localStorage));
-console.log("Token length:", localStorage.getItem("token")?.length);
-console.log("UserData:", localStorage.getItem("userData"));
-console.log("======================");
-        console.log("Token stored in localStorage");
-      }
-      
-      if (res.data.user) {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
-        console.log("User data stored in localStorage");
+        
+        window.dispatchEvent(new Event('storage'));
+        
+        showToast.success("Welcome back! Login successful.");
+        resetForm();
+        
+        if (onLoginSuccess) {
+          await onLoginSuccess(res.data.user, res.data.token);
+        }
+        
+        onClose();
       }
-      
-      // Verify 
-      const storedToken = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("userData");
-      console.log("Stored token:", storedToken);
-      console.log("Stored user:", storedUser);
-      
-      showToast.success("Welcome back! Login successful.");
-      resetForm();
-      
-      if (onLoginSuccess) {
-        await onLoginSuccess();
-      }
-      
-      onClose();
     } catch (error) {
-      console.error("Login error:", error);
       showToast.error(error.response?.data?.message || "Login failed");
     } finally {
       setIsSubmitting(false);
@@ -117,31 +99,22 @@ console.log("======================");
         { credential: credentialResponse.credential }
       );
       
-      console.log("Google auth response:", res.data);
-      
-      if (res.data.token) {
+      if (res.data.token && res.data.user) {
         localStorage.setItem("token", res.data.token);
-        console.log("Google token stored:", res.data.token);
-      }
-      
-      if (res.data.user) {
         localStorage.setItem("userData", JSON.stringify(res.data.user));
+        
+        window.dispatchEvent(new Event('storage'));
+        
+        showToast.success("Login successful!");
+        resetForm();
+        
+        if (onLoginSuccess) {
+          await onLoginSuccess(res.data.user, res.data.token);
+        }
+        
+        onClose();
       }
-      
-      // Verify storage
-      const storedToken = localStorage.getItem("token");
-      console.log("Verified stored token:", storedToken);
-      
-      showToast.success("Login successful!");
-      resetForm();
-      
-      if (onLoginSuccess) {
-        await onLoginSuccess();
-      }
-      
-      onClose();
     } catch (error) {
-      console.error("Google auth error:", error);
       showToast.error(error.response?.data?.message || "Authentication failed");
     }
   };

@@ -26,7 +26,7 @@ import {
 import { useToast } from "../Context.js/ToastContext.jsx";
 
 const Navbar = () => {
-  const { user, isLogged, checkAuthStatus, logout } = useAuth();
+  const { user, isLogged, checkAuthStatus, logout, login } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
@@ -36,29 +36,11 @@ const Navbar = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [updating, setUpdating] = useState({});
-  const  showToast = useToast();
-
+  const showToast = useToast();
   
   const navigate = useNavigate();
   const location = useLocation();
 
-const getHeadingColor = () => {
-  const path = location.pathname;
-  
-  if (path === '/' || path === '/home') {
-    return 'text-teal-600';
-  } else if (path === '/service' || path.startsWith('/service')) {
-    return 'text-teal-600';
-  } else if (path === '/categories' || path.startsWith('/categories')) {
-    return 'text-teal-600';
-  } else if (path === '/about' || path.startsWith('/about')) {
-    return 'text-teal-600';
-  } else if (path === '/contact' || path.startsWith('/contact')) {
-    return 'text-teal-600';
-  }
-  
-  return 'text-teal-600';
-};
   const {
     cart,
     wishlist,
@@ -89,30 +71,39 @@ const getHeadingColor = () => {
     };
   }, [isCartOpen, isWishlistOpen]);
 
+  useEffect(() => {
+    if (!showAuthModal && !isLogged) {
+      checkAuthStatus();
+    }
+  }, [showAuthModal]);
+
   const handleRegisterSuccess = (email) => {
     setRegisteredEmail(email);
     setShowOtpModal(true);
   };
 
-  const handleLoginSuccess = async () => {
-    await checkAuthStatus();
+  const handleLoginSuccess = async (userData, token) => {
+    if (userData && token) {
+      login(userData, token);
+    } else {
+      await checkAuthStatus();
+    }
     setShowAuthModal(false);
   };
+
   const handleLogout = async () => {
     try {
       await axios.post(`${baseurl}user/logout`);
-      
       showToast.success("Logged out successfully!");
-      
       logout();
       setShowProfileDropdown(false);
       setIsMenuOpen(false);
       navigate("/");
     } catch (error) {
-      console.error("Logout error:", error);
       showToast.error("Logout failed. Please try again.");
     }
   };
+
   const handleLogoClick = () => {
     navigate("/");
   };
@@ -167,219 +158,209 @@ const getHeadingColor = () => {
 
   return (
     <GoogleOAuthProvider clientId={ClientId}>
-<header
-  className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled ? "bg-white shadow-md" : "bg-white"
-  }`}
->
-  <div className="max-w-7xl mx-auto px-5 sm:px-8">
-    <div className="flex justify-between items-center h-20">
-      
-      <div className="flex items-center cursor-pointer select-none" onClick={handleLogoClick}>
-        <img
-          src="/logo.webp"
-          alt="Logo"
-          className="w-auto h-16 object-contain transition-all duration-300"
-        />
-      </div>
-
-      <nav className="hidden md:flex items-center space-x-8">
-        {[
-          { name: "Home", path: "/" },
-          { name: "Shop", path: "/categories" },
-          { name: "Gallery", path: "/gallery" },
-          { name: "Service", path: "/service" },
-          { name: "About", path: "/about" },
-          { name: "Contact", path: "/contact" },
-        ].map((item) => {
-          const active =
-            item.path === "/"
-              ? location.pathname === "/"
-              : location.pathname === item.path ||
-                location.pathname.startsWith(item.path + "/")
-
-          return (
-            <Link key={item.name} to={item.path} className="relative group py-2">
-              <span
-                className={`text-[16px] font-medium tracking-wide transition ${
-                  active
-                    ? "text-teal-600"
-                    : "text-gray-800 group-hover:text-teal-600"
-                }`}
-              >
-                {item.name}
-              </span>
-
-              <span
-                className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-300 ${
-                  active ? "w-full" : "w-0 group-hover:w-full"
-                }`}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled ? "bg-white shadow-md" : "bg-white"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="flex justify-between items-center h-20">
+            
+            <div className="flex items-center cursor-pointer select-none" onClick={handleLogoClick}>
+              <img
+                src="/logo.webp"
+                alt="Logo"
+                className="w-auto h-16 object-contain transition-all duration-300"
               />
-            </Link>
-          )
-        })}
-      </nav>
+            </div>
 
-      <div className="flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-8">
+              {[
+                { name: "Home", path: "/" },
+                { name: "Shop", path: "/categories" },
+                { name: "Gallery", path: "/gallery" },
+                { name: "Service", path: "/service" },
+                { name: "About", path: "/about" },
+                { name: "Contact", path: "/contact" },
+              ].map((item) => {
+                const active =
+                  item.path === "/"
+                    ? location.pathname === "/"
+                    : location.pathname === item.path ||
+                      location.pathname.startsWith(item.path + "/")
 
-        {isLogged && (
-          <>
-            <button
-              onClick={() => setIsWishlistOpen(true)}
-              className="relative p-2 rounded-xl hover:bg-teal-50 transition"
-            >
-              <Heart className="w-6 h-6 text-teal-600" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                  {wishlistCount}
-                </span>
+                return (
+                  <Link key={item.name} to={item.path} className="relative group py-2">
+                    <span
+                      className={`text-[16px] font-medium tracking-wide transition ${
+                        active
+                          ? "text-teal-600"
+                          : "text-gray-800 group-hover:text-teal-600"
+                      }`}
+                    >
+                      {item.name}
+                    </span>
+
+                    <span
+                      className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-300 ${
+                        active ? "w-full" : "w-0 group-hover:w-full"
+                      }`}
+                    />
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="flex items-center space-x-4">
+              {isLogged && (
+                <>
+                  <button
+                    onClick={() => setIsWishlistOpen(true)}
+                    className="relative p-2 rounded-xl hover:bg-teal-50 transition"
+                  >
+                    <Heart className="w-6 h-6 text-teal-600" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setIsCartOpen(true)}
+                    className="relative p-2 rounded-xl hover:bg-teal-50 transition"
+                  >
+                    <ShoppingCart className="w-6 h-6 text-teal-600" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </>
               )}
-            </button>
 
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2 rounded-xl hover:bg-teal-50 transition"
-            >
-              <ShoppingCart className="w-6 h-6 text-teal-600" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-          </>
-        )}
+              <div className="hidden md:block">
+                {!isLogged ? (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-6 py-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm font-semibold shadow-md hover:scale-105 transition"
+                  >
+                    Sign In
+                  </button>
+                ) : (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm shadow-md hover:scale-105 transition"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-white text-teal-600 text-xs font-bold flex items-center justify-center">
+                        {user?.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      {user?.name}
+                    </button>
 
-        <div className="hidden md:block">
-          {!isLogged ? (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm font-semibold shadow-md hover:scale-105 transition"
-            >
-              Sign In
-            </button>
-          ) : (
-            <div className="relative">
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-sm shadow-md hover:scale-105 transition"
-              >
-                <div className="w-7 h-7 rounded-full bg-white text-teal-600 text-xs font-bold flex items-center justify-center">
-                  {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                {user?.name}
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 mt-3 w-56 bg-white border border-teal-100 rounded-xl shadow-xl py-3">
+                        <div className="px-4 pb-3 border-b border-teal-100">
+                          <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+                          <p className="text-xs text-teal-600">{user?.email}</p>
+                        </div>
+
+                        <Link
+                          to="/profile"
+                          onClick={() => setShowProfileDropdown(false)}
+                          className="block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-600 transition rounded-lg"
+                        >
+                          Profile
+                        </Link>
+
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-600 transition rounded-lg"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? (
+                  <X className="w-7 h-7 text-teal-600" />
+                ) : (
+                  <Menu className="w-7 h-7 text-teal-600" />
+                )}
               </button>
+            </div>
+          </div>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-3 w-56 bg-white border border-teal-100 rounded-xl shadow-xl py-3">
-                  <div className="px-4 pb-3 border-b border-teal-100">
-                    <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+          <div
+            className={`md:hidden transition-all duration-300 ${
+              isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            } overflow-hidden`}
+          >
+            <nav className="px-4 py-4 space-y-4 bg-white border-t border-gray-100">
+              {["Home", "Shop", "Gallery", "Service", "About", "Contact"].map((item) => (
+                <Link
+                  key={item}
+                  to={
+                    item === "Home"
+                      ? "/"
+                      : item === "Shop"
+                      ? "/categories"
+                      : `/${item.toLowerCase()}`
+                  }
+                  onClick={handleMenuItemClick}
+                  className="block text-lg font-medium text-gray-700 hover:text-teal-600 transition"
+                >
+                  {item}
+                </Link>
+              ))}
+
+              {!isLogged ? (
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    handleMenuItemClick();
+                  }}
+                  className="w-full py-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-lg font-semibold shadow-md hover:scale-105 transition"
+                >
+                  Sign In
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg">
+                    <p className="text-sm font-semibold">{user?.name}</p>
                     <p className="text-xs text-teal-600">{user?.email}</p>
                   </div>
 
                   <Link
                     to="/profile"
-                    onClick={() => setShowProfileDropdown(false)}
-                    className="block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-600 transition rounded-lg"
+                    onClick={handleMenuItemClick}
+                    className="block text-lg font-medium hover:text-teal-600 transition"
                   >
                     Profile
                   </Link>
 
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-600 transition rounded-lg"
+                    onClick={() => {
+                      handleLogout();
+                      handleMenuItemClick();
+                    }}
+                    className="w-full text-left text-lg hover:text-red-600 transition"
                   >
                     Logout
                   </button>
                 </div>
               )}
-            </div>
-          )}
+            </nav>
+          </div>
         </div>
+      </header>
 
-        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          {isMenuOpen ? (
-            <X className="w-7 h-7 text-teal-600" />
-          ) : (
-            <Menu className="w-7 h-7 text-teal-600" />
-          )}
-        </button>
-      </div>
-    </div>
-
-    <div
-      className={`md:hidden transition-all duration-300 ${
-        isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-      } overflow-hidden`}
-    >
-  <nav className="px-4 py-4 space-y-4 bg-white border-t border-gray-100">
-  {["Home", "Shop", "Gallery", "Service", "About", "Contact"].map((item) => (
-    <Link
-      key={item}
-      to={
-        item === "Home"
-          ? "/"
-          : item === "Shop"
-          ? "/categories"   // 👈 Redirect Shop → /categories
-          : `/${item.toLowerCase()}`
-      }
-      onClick={handleMenuItemClick}
-      className="block text-lg font-medium text-gray-700 hover:text-teal-600 transition"
-    >
-      {item}
-    </Link>
-  ))}
-
-  {!isLogged ? (
-    <button
-      onClick={() => {
-        setShowAuthModal(true);
-        handleMenuItemClick();
-      }}
-      className="w-full py-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 text-white text-lg font-semibold shadow-md hover:scale-105 transition"
-    >
-      Sign In
-    </button>
-  ) : (
-    <div className="space-y-3">
-      <div className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg">
-        <p className="text-sm font-semibold">{user?.name}</p>
-        <p className="text-xs text-teal-600">{user?.email}</p>
-      </div>
-
-      <Link
-        to="/profile"
-        onClick={handleMenuItemClick}
-        className="block text-lg font-medium hover:text-teal-600 transition"
-      >
-        Profile
-      </Link>
-
-      <button
-        onClick={() => {
-          handleLogout();
-          handleMenuItemClick();
-        }}
-        className="w-full text-left text-lg hover:text-red-600 transition"
-      >
-        Logout
-      </button>
-    </div>
-  )}
-</nav>
-
-    </div>
-  </div>
-</header>
-
-
-
-
-
-
-
-
-      {/* Cart Sidebar */}
       {(isCartOpen || isWishlistOpen) && (
         <div
           className="fixed inset-0 bg-black/50 z-50 transition-opacity"
@@ -525,7 +506,6 @@ const getHeadingColor = () => {
         </div>
       </div>
 
-      {/* Wishlist Sidebar */}
       <div
         className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${
           isWishlistOpen ? "translate-x-0" : "translate-x-full"
@@ -648,7 +628,7 @@ const getHeadingColor = () => {
         onLoginSuccess={handleLoginSuccess}
       />
 
-       <OtpModal
+      <OtpModal
         show={showOtpModal}
         onClose={handleOtpModalClose}
         email={registeredEmail}

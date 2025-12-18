@@ -6,64 +6,7 @@ import Footer from '../../Layout/Footer';
 import { Fish, Package, Truck, Shield, Clock, CheckCircle, ChevronDown, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from "axios";
 import { baseurl } from '../../Base/Base';
-import 'aos/dist/aos.css';
-import AOS from 'aos';
 import OurProjects from '../../Layout/Projects';
-
-const createCache = () => {
-  const cache = new Map();
-  const timestamps = new Map();
-  const CACHE_DURATION = 5 * 60 * 1000;
-
-  return {
-    get: (key) => {
-      const cached = cache.get(key);
-      const timestamp = timestamps.get(key);
-      
-      if (cached && timestamp && Date.now() - timestamp < CACHE_DURATION) {
-        return cached;
-      }
-      
-      if (timestamp && Date.now() - timestamp >= CACHE_DURATION) {
-        cache.delete(key);
-        timestamps.delete(key);
-      }
-      
-      return null;
-    },
-    
-    set: (key, data) => {
-      cache.set(key, data);
-      timestamps.set(key, Date.now());
-      return data;
-    },
-    
-    clear: () => {
-      cache.clear();
-      timestamps.clear();
-    }
-  };
-};
-
-const cache = createCache();
-
-const fetchWithRetry = async (url, options = {}, retries = 2) => {
-  try {
-    const response = await axios({
-      url,
-      timeout: 10000,
-      ...options
-    });
-    return response.data;
-  } catch (error) {
-    if (retries > 0) {
-      console.log(`Retrying ${url}, attempts left: ${retries}`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
-      return fetchWithRetry(url, options, retries - 1);
-    }
-    throw error;
-  }
-};
 
 const CategorySkeleton = () => (
   <div className="w-full py-16 bg-white">
@@ -97,18 +40,34 @@ const ProductSkeleton = () => (
   </div>
 );
 
-// Homepage.js - STREAMLINED CategoryComponent
 const CategoryComponent = ({ categories = [], loading = false }) => {
+  const [activeCategory, setActiveCategory] = useState('');
   const navigate = useNavigate();
 
-  const gradients = [
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0]._id);
+    }
+  }, [categories, activeCategory]);
+
+  const gradients = useMemo(() => [
     'from-blue-500 to-cyan-500',
     'from-emerald-500 to-teal-500',
     'from-purple-500 to-pink-500',
     'from-orange-500 to-red-500',
     'from-indigo-500 to-blue-500',
     'from-pink-500 to-rose-500',
-  ];
+  ], []);
+
+  const getGradientColor = (index) => gradients[index % gradients.length];
+
+  const handleViewProducts = (categoryId) => {
+    navigate(`/${categoryId}/sub-category`);
+  };
+
+  const activeData = useMemo(() => {
+    return categories.find(cat => cat._id === activeCategory);
+  }, [categories, activeCategory]);
 
   if (loading) return <CategorySkeleton />;
   if (categories.length === 0) return null;
@@ -121,42 +80,89 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
             <Fish className="w-4 h-4 text-blue-600" />
             <span className="text-blue-600 font-medium">Our Categories</span>
           </div>
+
           <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-3">
             Our Categories
           </h2>
+
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Explore our premium selection of aquatic life and professional equipment
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map((category, index) => {
-            const gradientColor = gradients[index % gradients.length];
+            const gradientColor = getGradientColor(index);
+            const isActive = activeCategory === category._id;
             return (
-              <div
+              <button
                 key={category._id}
-                onClick={() => navigate(`/${category._id}/sub-category`)}
-                className="group flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl cursor-pointer transition-all duration-300 hover:scale-105"
+                onClick={() => setActiveCategory(category._id)}
+                className={`group flex flex-col items-center gap-3 p-6 w-36 rounded-2xl transition-all 
+                ${isActive
+                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 shadow-xl border-2 border-blue-200"
+                  : "bg-slate-50 hover:bg-white shadow-md hover:shadow-lg"
+                }`}
               >
-                <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center p-2`}>
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  isActive 
+                    ? `bg-gradient-to-br ${gradientColor} shadow-lg` 
+                    : 'bg-white'
+                }`}>
                   {category.image ? (
-                    <img src={category.image} alt={category.name} className="w-full h-full object-contain" />
+                    <img src={category.image} alt={category.name} className="w-10 h-10 object-contain" />
                   ) : (
-                    <Fish className="w-10 h-10 text-white" />
+                    <Fish className="w-10 h-10 text-blue-600" />
                   )}
                 </div>
-                <span className="text-slate-900 font-semibold text-center">
-                  {category.name}
-                </span>
-              </div>
+
+                <span className="text-slate-900 font-semibold">{category.name}</span>
+
+                {isActive && (
+                  <div className={`w-12 h-1.5 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
+                )}
+              </button>
             );
           })}
         </div>
 
-        <div className="text-center">
+        {activeData && (
+          <div className="w-full mx-auto bg-gradient-to-r from-[#144E8C] to-[#78CDD1] rounded-3xl p-6 md:p-12 shadow-2xl">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
+              <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl p-1.5 shadow-2xl ${
+                getGradientColor(categories.findIndex(c => c._id === activeCategory))
+              }`}>
+                <div className="w-full h-full bg-white rounded-xl flex items-center justify-center">
+                  <img
+                    src={activeData.image}
+                    alt={activeData.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 text-white">
+                <h3 className="text-4xl font-bold mb-3">{activeData.name}</h3>
+                <p className="text-lg mb-6">
+                  {activeData.description || "Explore our quality products in this category"}
+                </p>
+
+                <button
+                  onClick={() => handleViewProducts(activeData._id)}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-semibold shadow-lg hover:scale-105 transition"
+                >
+                  View Products
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="text-center mt-12">
           <button
             onClick={() => navigate('/categories')}
-            className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
+            className="inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
           >
             Explore All Categories
             <ChevronDown className="w-5 h-5" />
@@ -170,274 +176,33 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
 const FeaturedProducts = ({ products = [], loading = false }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
-  const containerRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const startPosRef = useRef({ x: 0, scrollLeft: 0 });
-  const autoSlideIntervalRef = useRef(null);
-  const isHoveringRef = useRef(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
-
-  const AUTO_SLIDE_SPEED = 5;
-  const CARD_WIDTH = 320;
-  const CARD_GAP = 24;
-
-  const duplicatedProducts = useMemo(() => {
-    if (!products.length) return [];
-    return [...products, ...products, ...products];
-  }, [products]);
-
-  const updateCurrentIndex = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider || !products.length) return;
-    const totalWidth = CARD_WIDTH + CARD_GAP;
-    const singleSetWidth = totalWidth * products.length;
-    let scrollPos = slider.scrollLeft;
-    
-    if (scrollPos >= singleSetWidth * 2) {
-      scrollPos -= singleSetWidth;
-    }
-    if (scrollPos < singleSetWidth) {
-      scrollPos += singleSetWidth;
-    }
-    
-    const newIndex = Math.round((scrollPos - singleSetWidth) / totalWidth);
-    const normalizedIndex = Math.max(0, Math.min(newIndex, products.length - 1));
-    setCurrentIndex(normalizedIndex);
-  }, [products.length]);
-
-  const startAutoSlide = useCallback(() => {
-    if (autoSlideIntervalRef.current) clearInterval(autoSlideIntervalRef.current);
-    
-    autoSlideIntervalRef.current = setInterval(() => {
-      const slider = sliderRef.current;
-      if (!slider || isDraggingRef.current || isHoveringRef.current || !products.length) return;
-      
-      slider.scrollLeft += AUTO_SLIDE_SPEED;
-      
-      const totalWidth = CARD_WIDTH + CARD_GAP;
-      const singleSetWidth = totalWidth * products.length;
-      
-      if (slider.scrollLeft >= singleSetWidth * 2.5) {
-        const offset = slider.scrollLeft - (singleSetWidth * 2);
-        slider.scrollLeft = singleSetWidth + offset - 50;
-      }
-      
-      updateCurrentIndex();
-    }, 16);
-  }, [products.length, updateCurrentIndex]);
-
-  const stopAutoSlide = useCallback(() => {
-    if (autoSlideIntervalRef.current) {
-      clearInterval(autoSlideIntervalRef.current);
-      autoSlideIntervalRef.current = null;
-    }
-  }, []);
-
-  const handleMouseEnter = useCallback(() => {
-    isHoveringRef.current = true;
-    stopAutoSlide();
-  }, [stopAutoSlide]);
-
-  const handleMouseLeave = useCallback(() => {
-    isHoveringRef.current = false;
-    if (!isDraggingRef.current) {
-      startAutoSlide();
-    }
-  }, [startAutoSlide]);
-
-  const handleDragStart = useCallback((e) => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    
-    isDraggingRef.current = true;
-    const x = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
-    startPosRef.current = { x, scrollLeft: slider.scrollLeft };
-    slider.style.scrollBehavior = "auto";
-    slider.classList.add("grabbing");
-    stopAutoSlide();
-  }, [stopAutoSlide]);
-
-  const handleDragMove = useCallback((e) => {
-    if (!isDraggingRef.current) return;
-    const slider = sliderRef.current;
-    if (!slider) return;
-    
-    e.preventDefault();
-    const x = e.pageX ?? e.touches?.[0]?.pageX ?? 0;
-    const walk = (x - startPosRef.current.x) * 1.5;
-    slider.scrollLeft = startPosRef.current.scrollLeft - walk;
-    updateCurrentIndex();
-  }, [updateCurrentIndex]);
-
-  const handleDragEnd = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    
-    isDraggingRef.current = false;
-    slider.style.scrollBehavior = "smooth";
-    slider.classList.remove("grabbing");
-    
-    const totalWidth = CARD_WIDTH + CARD_GAP;
-    const singleSetWidth = totalWidth * products.length;
-    
-    if (slider.scrollLeft < singleSetWidth) {
-      slider.scrollLeft += singleSetWidth;
-    } else if (slider.scrollLeft >= singleSetWidth * 2) {
-      slider.scrollLeft -= singleSetWidth;
-    }
-    
-    updateCurrentIndex();
-    setTimeout(() => {
-      if (!isHoveringRef.current) {
-        startAutoSlide();
-      }
-    }, 500);
-  }, [products.length, startAutoSlide, updateCurrentIndex]);
-
-  const scrollToIndex = useCallback((index) => {
-    const slider = sliderRef.current;
-    if (!slider || !products.length) return;
-    
-    stopAutoSlide();
-    const totalWidth = CARD_WIDTH + CARD_GAP;
-    const singleSetWidth = totalWidth * products.length;
-    
-    const targetScroll = singleSetWidth + (index * totalWidth);
-    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
-    setCurrentIndex(index);
-    
-    setTimeout(() => {
-      if (!isHoveringRef.current) {
-        startAutoSlide();
-      }
-    }, 800);
-  }, [products.length, startAutoSlide, stopAutoSlide]);
 
   const scrollLeft = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
-    
-    stopAutoSlide();
-    const totalWidth = CARD_WIDTH + CARD_GAP;
-    const singleSetWidth = totalWidth * products.length;
-    
-    const currentScroll = slider.scrollLeft;
-    let targetScroll = currentScroll - totalWidth;
-    
-    if (targetScroll < singleSetWidth) {
-      targetScroll += singleSetWidth;
-    }
-    
-    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
-    
-    setTimeout(() => {
-      updateCurrentIndex();
-      if (!isHoveringRef.current) {
-        startAutoSlide();
-      }
-    }, 600);
-  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex, products.length]);
+    slider.scrollBy({ left: -344, behavior: 'smooth' });
+  }, []);
 
   const scrollRight = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
-    
-    stopAutoSlide();
-    const totalWidth = CARD_WIDTH + CARD_GAP;
-    const singleSetWidth = totalWidth * products.length;
-    
-    const currentScroll = slider.scrollLeft;
-    let targetScroll = currentScroll + totalWidth;
-    
-    if (targetScroll >= singleSetWidth * 2) {
-      targetScroll -= singleSetWidth;
-    }
-    
-    slider.scrollTo({ left: targetScroll, behavior: "smooth" });
-    
-    setTimeout(() => {
-      updateCurrentIndex();
-      if (!isHoveringRef.current) {
-        startAutoSlide();
-      }
-    }, 600);
-  }, [startAutoSlide, stopAutoSlide, updateCurrentIndex, products.length]);
-
-  useEffect(() => {
-    setIsMounted(true);
+    slider.scrollBy({ left: 344, behavior: 'smooth' });
   }, []);
 
-  useEffect(() => {
-    if (isMounted && products.length && sliderRef.current) {
-      const totalWidth = CARD_WIDTH + CARD_GAP;
-      const singleSetWidth = totalWidth * products.length;
-      
-      sliderRef.current.scrollLeft = singleSetWidth;
-      
-      const timer = setTimeout(() => {
-        startAutoSlide();
-      }, 1000);
-      
-      return () => {
-        clearTimeout(timer);
-        stopAutoSlide();
-      };
-    }
-  }, [products.length, startAutoSlide, stopAutoSlide, isMounted]);
+  const handleScroll = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider || !products.length) return;
+    const index = Math.round(slider.scrollLeft / 344);
+    setCurrentIndex(Math.min(index, products.length - 1));
+  }, [products.length]);
 
   useEffect(() => {
     const slider = sliderRef.current;
-    const container = containerRef.current;
-    if (!slider || !container || !products.length) return;
-
-    const handleScroll = () => {
-      if (!isDraggingRef.current) {
-        updateCurrentIndex();
-        
-        const totalWidth = CARD_WIDTH + CARD_GAP;
-        const singleSetWidth = totalWidth * products.length;
-        
-        if (slider.scrollLeft < singleSetWidth * 0.5) {
-          slider.scrollLeft += singleSetWidth;
-        } else if (slider.scrollLeft > singleSetWidth * 2.5) {
-          slider.scrollLeft -= singleSetWidth;
-        }
-      }
-    };
-
-    slider.addEventListener("mousedown", handleDragStart);
-    slider.addEventListener("mouseenter", handleMouseEnter);
-    slider.addEventListener("mouseleave", handleMouseLeave);
-    container.addEventListener("mouseleave", handleMouseLeave);
-    document.addEventListener("mousemove", handleDragMove);
-    document.addEventListener("mouseup", handleDragEnd);
-    slider.addEventListener("touchstart", handleDragStart, { passive: false });
-    slider.addEventListener("touchmove", handleDragMove, { passive: false });
-    slider.addEventListener("touchend", handleDragEnd);
-    slider.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      slider.removeEventListener("mousedown", handleDragStart);
-      slider.removeEventListener("mouseenter", handleMouseEnter);
-      slider.removeEventListener("mouseleave", handleMouseLeave);
-      container.removeEventListener("mouseleave", handleMouseLeave);
-      document.removeEventListener("mousemove", handleDragMove);
-      document.removeEventListener("mouseup", handleDragEnd);
-      slider.removeEventListener("touchstart", handleDragStart);
-      slider.removeEventListener("touchmove", handleDragMove);
-      slider.removeEventListener("touchend", handleDragEnd);
-      slider.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleDragStart, handleDragMove, handleDragEnd, handleMouseEnter, handleMouseLeave, updateCurrentIndex, products.length]);
-
-  const handleClick = useCallback((id, e) => {
-    if (isDraggingRef.current || Math.abs(e.currentTarget.getBoundingClientRect().left - startPosRef.current.x) > 5) {
-      e.preventDefault();
-      return;
-    }
-    navigate(`/product/${id}`);
-  }, [navigate]);
+    if (!slider) return;
+    slider.addEventListener('scroll', handleScroll, { passive: true });
+    return () => slider.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   if (loading) {
     return (
@@ -490,7 +255,7 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">Discover our handpicked collection of top-quality aquatic products</p>
         </div>
 
-        <div className="relative" ref={containerRef}>
+        <div className="relative">
           <button 
             onClick={scrollLeft} 
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
@@ -507,16 +272,16 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
 
           <div 
             ref={sliderRef} 
-            className="flex gap-6 overflow-x-auto pb-8 cursor-grab active:cursor-grabbing no-scrollbar"
+            className="flex gap-6 overflow-x-auto pb-8 no-scrollbar snap-x snap-mandatory"
             style={{ scrollBehavior: 'smooth' }}
           >
-            {duplicatedProducts.map((product, index) => {
-              const gradientColor = getGradientColor(index % products.length);
+            {products.map((product, index) => {
+              const gradientColor = getGradientColor(index);
               return (
                 <div 
-                  key={`${product._id}-${index}`} 
-                  onClick={(e) => handleClick(product._id, e)} 
-                  className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
+                  key={product._id} 
+                  onClick={() => navigate(`/product/${product._id}`)} 
+                  className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group snap-start"
                 >
                   <div className="relative h-48 overflow-hidden">
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradientColor} opacity-10`} />
@@ -524,8 +289,7 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
                       src={product.images?.[0] || "/placeholder.jpg"} 
                       alt={product.name} 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                      loading="lazy" 
-                      draggable="false"
+                      loading="lazy"
                     />
                     {product.discount > 0 && (
                       <div className="absolute top-4 right-4">
@@ -579,9 +343,6 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
               );
             })}
           </div>
-
-          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none" />
         </div>
 
         <div className="flex justify-center items-center gap-6 mt-8">
@@ -589,7 +350,6 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
             {products.slice(0, Math.min(6, products.length)).map((_, index) => (
               <button 
                 key={index} 
-                onClick={() => scrollToIndex(index)} 
                 className={`w-3 h-3 rounded-full transition-all ${
                   currentIndex === index 
                     ? "bg-gradient-to-r from-blue-900 to-indigo-900 w-8" 
@@ -605,10 +365,6 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
       </div>
 
       <style jsx>{`
-        .grabbing { 
-          cursor: grabbing !important; 
-          user-select: none; 
-        }
         .no-scrollbar { 
           -ms-overflow-style: none; 
           scrollbar-width: none; 
@@ -882,95 +638,38 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
-
-  const prefetchData = () => {
-    setTimeout(() => {
-      const categoriesKey = 'prefetch_categories';
-      if (!cache.get(categoriesKey)) {
-        fetchWithRetry(`${baseurl}user/category`, {}, 1)
-          .then(data => {
-            if (data.success) {
-              cache.set(categoriesKey, data.categories);
-            }
-          })
-          .catch(() => {});
-      }
-    }, 2000);
-  };
 
   useEffect(() => {
-    AOS.init({ 
-      duration: 600, 
-      once: true, 
-      offset: 50,
-      disable: window.innerWidth < 768 ? true : false 
-    });
-
     const fetchHomeData = async () => {
-      const cacheKey = 'home_data_v2';
-      const cached = cache.get(cacheKey);
-      
-      if (cached) {
-        setHomeData(cached);
-        setLoading(false);
-        
-        setTimeout(() => {
-          fetchFreshData(cacheKey);
-        }, 1000);
-        
-        return;
-      }
-
-      await fetchFreshData(cacheKey);
-    };
-
-    const fetchFreshData = async (cacheKey) => {
-      setLoading(true);
-      setError(null);
-      
       try {
-        const data = await fetchWithRetry(
-          `${baseurl}user/batch-data?include=categories,featured`,
-          {},
-          2
-        );
+        const response = await axios.get(`${baseurl}user/batch-data?include=categories,featured`, {
+          timeout: 8000
+        });
         
-        if (data.success) {
-          const formattedData = {
-            categories: data.categories || [],
-            featuredProducts: data.featuredProducts || []
-          };
-          
-          setHomeData(formattedData);
-          cache.set(cacheKey, formattedData);
-          
-          prefetchData();
-        } else {
-          throw new Error('Failed to fetch data');
+        if (response.data && response.data.success) {
+          setHomeData({
+            categories: response.data.categories || [],
+            featuredProducts: response.data.featuredProducts || []
+          });
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
         setError(err.message);
-        
-        if (retryCount < 2) {
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 2000);
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchHomeData();
-  }, [retryCount]);
+  }, []);
 
   const handleRetry = () => {
-    setRetryCount(0);
+    setLoading(true);
+    setError(null);
+    window.location.reload();
   };
 
-  if (loading && retryCount === 0) {
+  if (loading) {
     return (
       <div className="bg-white min-h-screen">
         <Navbar />
@@ -988,7 +687,7 @@ export default function HomePage() {
     );
   }
 
-  if (error && retryCount >= 2) {
+  if (error) {
     return (
       <div className="bg-white min-h-screen flex flex-col items-center justify-center">
         <Navbar />
@@ -1018,38 +717,25 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       
-      <section data-aos="fade-up">
-        <CategoryComponent 
-          categories={homeData.categories} 
-          loading={loading && homeData.categories.length === 0}
-        />
-      </section>
+      <CategoryComponent 
+        categories={homeData.categories} 
+        loading={false}
+      />
       
-      <section data-aos="fade-up">
-        <Services />
-      </section>
-      <section data-aos="fade-up">
-        <OurProjects />
-      </section>
+      <Services />
       
-      <section data-aos="fade-up">
-        <WhyChooseUs />
-      </section>
+      <OurProjects />
       
-      <section data-aos="fade-up">
-        <Testimonials />
-      </section>
+      <WhyChooseUs />
       
-      <section data-aos="fade-up">
-        <FAQ />
-      </section>
+      <Testimonials />
       
-      <section data-aos="fade-up">
-        <FeaturedProducts 
-          products={homeData.featuredProducts} 
-          loading={loading && homeData.featuredProducts.length === 0}
-        />
-      </section>
+      <FAQ />
+      
+      <FeaturedProducts 
+        products={homeData.featuredProducts} 
+        loading={false}
+      />
       
       <Footer />
     </div>

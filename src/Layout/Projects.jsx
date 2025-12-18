@@ -13,36 +13,7 @@ import {
   Clock
 } from 'lucide-react';
 import axios from 'axios';
-import AOS from 'aos';
 import { baseurl } from '../Base/Base';
-
-const CACHE_KEY = 'portfolios_featured';
-const CACHE_DURATION = 15 * 60 * 1000;
-
-const getPersistentCache = (key) => {
-  try {
-    if (typeof window === 'undefined') return null;
-    const cached = sessionStorage.getItem(key);
-    if (!cached) return null;
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > CACHE_DURATION) {
-      sessionStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-const setPersistentCache = (key, data) => {
-  try {
-    if (typeof window === 'undefined') return;
-    sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (error) {
-    console.warn('Cache failed:', error);
-  }
-};
 
 const OurProjects = () => {
   const [portfolios, setPortfolios] = useState([]);
@@ -58,55 +29,25 @@ const OurProjects = () => {
       setLoading(true);
       setError(null);
 
-      const cached = getPersistentCache(CACHE_KEY);
-      if (cached && Array.isArray(cached) && cached.length > 0) {
-        console.log('Using cached portfolios:', cached.length);
-        setPortfolios(cached);
-        setLoading(false);
-      }
-
-      console.log('Fetching portfolios from API:', `${baseurl}user/portfolios/featured`);
-
-      const controller = new AbortController();
-
       const response = await axios.get(`${baseurl}user/portfolios/featured`, {
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        timeout: 8000
       });
-
-      console.log('API Response:', response.data);
 
       if (response.data && response.data.success) {
         const fetchedPortfolios = response.data.portfolios || [];
-        console.log('Fetched portfolios count:', fetchedPortfolios.length);
-
         setPortfolios(fetchedPortfolios);
-
-        if (fetchedPortfolios.length > 0) {
-          setPersistentCache(CACHE_KEY, fetchedPortfolios);
-        }
       } else {
         throw new Error('Invalid response format');
       }
     } catch (error) {
       console.error('Error fetching portfolios:', error);
-
-      const cached = getPersistentCache(CACHE_KEY);
-      if (cached && Array.isArray(cached) && cached.length > 0) {
-        console.log('Using cached data as fallback');
-        setPortfolios(cached);
-      } else {
-        setError(error.message || 'Failed to load projects');
-      }
+      setError(error.message || 'Failed to load projects');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    AOS.init({ duration: 900, once: true });
     fetchPortfolios();
   }, [fetchPortfolios]);
 
@@ -222,7 +163,7 @@ const OurProjects = () => {
     <>
       <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16" >
+          <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 mb-6">
               <Sparkles className="w-4 h-4 text-blue-400" />
               <span className="text-blue-400 font-medium">Featured Works</span>
@@ -360,12 +301,12 @@ const OurProjects = () => {
             </div>
 
             <div className="relative">
-            <img
-            src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
-            alt={`${selectedPortfolio.name} - Image ${currentImageIndex + 1}`}
-            className="w-full max-h-[70vh] object-contain bg-black"
-            onClick={() => openFullscreen(currentImageIndex)}
-          />
+              <img
+                src={selectedPortfolio.mediaUrls?.[currentImageIndex]}
+                alt={`${selectedPortfolio.name} - Image ${currentImageIndex + 1}`}
+                className="w-full max-h-[70vh] object-contain bg-black"
+                onClick={() => openFullscreen(currentImageIndex)}
+              />
 
               <button
                 onClick={() => openFullscreen(currentImageIndex)}

@@ -18,7 +18,6 @@ import { baseurl } from '../../Base/Base';
 import { useCartWishlist } from '../../Context.js/Cartwishlist';
 import { useAuth } from '../../Context.js/Auth';
 
-// Loading skeleton component
 const ProductSkeleton = () => (
   <div className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
     <div className="h-64 bg-slate-200"></div>
@@ -38,7 +37,6 @@ const ProductSkeleton = () => (
   </div>
 );
 
-// Optimized Image component with lazy loading
 const LazyProductImage = ({ src, alt, className }) => {
   const [imageSrc, setImageSrc] = useState('/placeholder.jpg');
   const [isLoading, setIsLoading] = useState(true);
@@ -60,9 +58,7 @@ const LazyProductImage = ({ src, alt, className }) => {
     <img
       src={imageSrc}
       alt={alt}
-      className={`${className} transition-all duration-300 ${
-        isLoading ? 'blur-sm' : ''
-      }`}
+      className={`${className} transition-all duration-300 ${isLoading ? 'blur-sm' : ''}`}
     />
   );
 };
@@ -87,7 +83,6 @@ const ProductsPage = () => {
   const { isLogged } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useCartWishlist();
 
-  // Memoize gradient colors
   const gradients = useMemo(() => [
     'from-[#144E8C] to-[#78CDD1]',
     'from-[#78C7A2] to-[#99D5C8]',
@@ -101,7 +96,6 @@ const ProductsPage = () => {
     return gradients[index % gradients.length];
   }, [gradients]);
 
-  // Parse page from URL on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const pageParam = searchParams.get('page');
@@ -110,83 +104,58 @@ const ProductsPage = () => {
     }
   }, [location.search]);
 
-  // Optimized fetchCategories with caching
   const fetchCategories = useCallback(async () => {
     try {
-      // Check sessionStorage cache first
-      const cachedCategories = sessionStorage.getItem('categories');
-      const cacheTime = sessionStorage.getItem('categoriesTime');
+      console.log('Fetching categories from:', `${baseurl}user/categories/with-subcategories`);
       
-      if (cachedCategories && cacheTime && Date.now() - parseInt(cacheTime) < 300000) {
-        const allCategories = JSON.parse(cachedCategories);
-        setCategories(allCategories);
-        setCategoriesLoading(false);
-        updateCategoryState(allCategories);
-        return;
-      }
-
-      const controller = new AbortController();
       const response = await axios.get(
-        `${baseurl}user/categories-with-subcategories`,
+        `${baseurl}user/categories/with-subcategories`,
         { 
-          signal: controller.signal,
           timeout: 10000 
         }
       );
   
+      console.log('Categories API Response:', response.data);
+      
       if (response.data.success) {
-        const allCategories = response.data.categories;
+        const allCategories = response.data.categories || [];
+        console.log('Setting categories:', allCategories);
         setCategories(allCategories);
         
-        // Cache in sessionStorage for 5 minutes
-        sessionStorage.setItem('categories', JSON.stringify(allCategories));
-        sessionStorage.setItem('categoriesTime', Date.now().toString());
-        
-        updateCategoryState(allCategories);
+        // Update category state based on URL params
+        if (subCategoryId) {
+          const categoryToExpand = allCategories.find(cat =>
+            cat.subcategories?.some(sub => sub._id === subCategoryId)
+          );
+
+          if (categoryToExpand) {
+            setExpandedCategories({ [categoryToExpand._id]: true });
+            setCategoryName(categoryToExpand.name);
+
+            const subCat = categoryToExpand.subcategories.find(
+              sub => sub._id === subCategoryId
+            );
+
+            if (subCat) {
+              setSubCategoryName(subCat.name);
+            }
+          }
+        } else if (categoryId) {
+          const category = allCategories.find(cat => cat._id === categoryId);
+          if (category) {
+            setCategoryName(category.name);
+            setExpandedCategories({ [categoryId]: true });
+          }
+        }
       }
     } catch (error) {
-      if (error.name !== 'CanceledError') {
-        console.error("Error fetching categories:", error);
-      }
+      console.error("Error fetching categories:", error);
     } finally {
       setCategoriesLoading(false);
     }
   }, [subCategoryId, categoryId]);
 
-  // Separate function to update category state
-  const updateCategoryState = useCallback((allCategories) => {
-    if (subCategoryId) {
-      const categoryToExpand = allCategories.find(cat =>
-        cat.subcategories?.some(sub => sub._id === subCategoryId)
-      );
-
-      if (categoryToExpand) {
-        setExpandedCategories({ [categoryToExpand._id]: true });
-        setCategoryName(categoryToExpand.name);
-
-        const subCat = categoryToExpand.subcategories.find(
-          sub => sub._id === subCategoryId
-        );
-
-        if (subCat) {
-          setSubCategoryName(subCat.name);
-        }
-      }
-    } else if (categoryId) {
-      const category = allCategories.find(cat => cat._id === categoryId);
-      if (category) {
-        setCategoryName(category.name);
-        setExpandedCategories({ [categoryId]: true });
-      }
-    } else {
-      setExpandedCategories({});
-    }
-  }, [subCategoryId, categoryId]);
-
-  // Optimized fetchProducts with request cancellation
   const fetchProducts = useCallback(async (page = 1, subCatId = '', search = '') => {
-    const controller = new AbortController();
-    
     setLoading(true);
     try {
       const params = {
@@ -208,63 +177,32 @@ const ProductsPage = () => {
         `${baseurl}user/products/${apiCategoryId || ''}`, 
         { 
           params,
-          signal: controller.signal,
           timeout: 10000
         }
       );
       
       if (response.data.success) {
-        setProducts(response.data.products);
-        setTotalPages(response.data.totalPages);
-        setTotalProducts(response.data.totalProducts);
-        setCurrentPage(response.data.currentPage);
+        setProducts(response.data.products || []);
+        setTotalPages(response.data.totalPages || 1);
+        setTotalProducts(response.data.totalProducts || 0);
+        setCurrentPage(response.data.currentPage || 1);
       }
     } catch (error) {
-      if (error.name !== 'CanceledError') {
-        console.error('Error fetching products:', error);
-        // Show error state to user
-        setProducts([]);
-      }
+      console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
-
-    return () => controller.abort();
   }, [categoryId, productsPerPage]);
 
-  // Initial fetch of categories
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
-  // Fetch products when URL params change
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const pageParam = searchParams.get('page');
     const page = pageParam ? parseInt(pageParam, 10) : 1;
-
-    // Update category info from cached categories
-    if (categories.length > 0) {
-      if (subCategoryId && !subCategoryName) {
-        const categoryWithSub = categories.find(cat =>
-          cat.subcategories?.some(sub => sub._id === subCategoryId)
-        );
-        if (categoryWithSub) {
-          const subCat = categoryWithSub.subcategories.find(
-            sub => sub._id === subCategoryId
-          );
-          if (subCat) {
-            setSubCategoryName(subCat.name);
-            setCategoryName(categoryWithSub.name);
-          }
-        }
-      } else if (categoryId && !categoryName) {
-        const category = categories.find(cat => cat._id === categoryId);
-        if (category) {
-          setCategoryName(category.name);
-        }
-      }
-    }
 
     if (subCategoryId) {
       fetchProducts(page, subCategoryId, searchQuery);
@@ -275,9 +213,8 @@ const ProductsPage = () => {
       setCategoryName('');
       fetchProducts(page, '', searchQuery);
     }
-  }, [subCategoryId, categoryId, location.search, categories]);
+  }, [subCategoryId, categoryId, location.search]);
   
-  // Debounced search
   useEffect(() => {
     if (searchQuery === '') {
       return;
@@ -389,84 +326,83 @@ const ProductsPage = () => {
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
       
-<div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
-<div
-className="absolute inset-0 opacity-10"
-style={{
-backgroundImage: 'url(/patterns/foscape-pattern.svg)',
-backgroundSize: '1000px 1000px',
-backgroundPosition: 'left center',
-backgroundRepeat: 'repeat-y',
-maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
-WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
-}}
-/>
-<div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
-      onClick={() => navigate(-1)}
-      className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
-    >
-      <ArrowLeft className="w-5 h-5" />
-      <span className="text-sm font-medium">Back</span>
-    </button>
-
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <div className="flex items-center gap-3 mb-3">
-          <Package className="w-8 h-8" />
-          <h1 className="text-3xl sm:text-4xl font-bold">
-            {subCategoryName || categoryName || 'All Products'}
-          </h1>
-        </div>
-        <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
-          Discover our premium collection of quality products
-        </p>
-      </div>
-    </div>
-
-    <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
-      <span
-        onClick={() => navigate('/')}
-        className="hover:text-white cursor-pointer"
-      >
-        Home
-      </span>
-      <ChevronRight className="w-4 h-4" />
-      <span
-        onClick={() => navigate('/categories')}
-        className="hover:text-white cursor-pointer"
-      >
-        Categories
-      </span>
-      {categoryName && (
-        <>
-          <ChevronRight className="w-4 h-4" />
-          <span 
-            onClick={handleBreadcrumbCategoryClick}
-            className="text-white hover:text-[#CFEAE3] cursor-pointer"
+      <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">
+      <div
+      className="absolute inset-0 opacity-10"
+      style={{
+      backgroundImage: 'url(/patterns/foscape-pattern.svg)',
+      backgroundSize: '1000px 1000px',
+      backgroundPosition: 'left center',
+      backgroundRepeat: 'repeat-y',
+      maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, transparent 100%)'
+      }}
+      />
+      <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">             <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 mb-6 text-[#CFEAE3] hover:text-white transition-all"
           >
-            {categoryName}
-          </span>
-        </>
-      )}
-      {subCategoryName && (
-        <>
-          <ChevronRight className="w-4 h-4" />
-          <span className="font-semibold text-white">{subCategoryName}</span>
-        </>
-      )}
-      {!subCategoryName && !categoryName && (
-        <>
-          <ChevronRight className="w-4 h-4" />
-          <span className="font-semibold text-white">All Products</span>
-        </>
-      )}
-    </div>
-  </div>
-</div>
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <Package className="w-8 h-8" />
+                <h1 className="text-3xl sm:text-4xl font-bold">
+                  {subCategoryName || categoryName || 'All Products'}
+                </h1>
+              </div>
+              <p className="text-[#CFEAE3] text-base sm:text-lg max-w-2xl">
+                Discover our premium collection of quality products
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center text-sm text-[#CFEAE3] gap-1">
+            <span
+              onClick={() => navigate('/')}
+              className="hover:text-white cursor-pointer"
+            >
+              Home
+            </span>
+            <ChevronRight className="w-4 h-4" />
+            <span
+              onClick={() => navigate('/categories')}
+              className="hover:text-white cursor-pointer"
+            >
+              Categories
+            </span>
+            {categoryName && (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                <span 
+                  onClick={handleBreadcrumbCategoryClick}
+                  className="text-white hover:text-[#CFEAE3] cursor-pointer"
+                >
+                  {categoryName}
+                </span>
+              </>
+            )}
+            {subCategoryName && (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                <span className="font-semibold text-white">{subCategoryName}</span>
+              </>
+            )}
+            {!subCategoryName && !categoryName && (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                <span className="font-semibold text-white">All Products</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-8 -mt-10 pb-16">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Categories Sidebar */}
             <div className="lg:w-80 flex-shrink-0">
               <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-24">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -483,7 +419,7 @@ WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40
                         </div>
                       ))}
                     </div>
-                  ) : (
+                  ) : categories.length > 0 ? (
                     categories.map((category) => (
                       <div key={category._id} className="border-b border-slate-100 last:border-0">
                         <button
@@ -493,16 +429,18 @@ WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40
                           <span className="font-semibold text-slate-800">
                             {category.name}
                           </span>
-                          {expandedCategories[category._id] ? (
-                            <ChevronUp className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                          )}
+                          {category.subcategories && category.subcategories.length > 0 ? (
+                            expandedCategories[category._id] ? (
+                              <ChevronUp className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                            )
+                          ) : null}
                         </button>
 
-                        {expandedCategories[category._id] && (
+                        {expandedCategories[category._id] && category.subcategories && category.subcategories.length > 0 && (
                           <div className="ml-4 space-y-1 pb-2">
-                            {category.subcategories?.map((subCat) => (
+                            {category.subcategories.map((subCat) => (
                               <div
                                 key={subCat._id}
                                 onClick={() => handleSubCategoryClick(subCat._id, subCat.name, category.name, category._id)}
@@ -519,12 +457,15 @@ WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40
                         )}
                       </div>
                     ))
+                  ) : (
+                    <div className="text-center py-4 text-slate-500">
+                      No categories found
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Products Section */}
             <div className="flex-1">
               <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
                 <div className="flex flex-col md:flex-row gap-4 items-center">

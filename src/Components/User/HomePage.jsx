@@ -24,7 +24,7 @@ const CategorySkeleton = () => (
   </div>
 );
 
-const CategoryComponent = ({ categories = [], loading = false }) => {
+const CategoryComponent = ({ categories = [] }) => {
   const [activeCategory, setActiveCategory] = useState('');
   const navigate = useNavigate();
 
@@ -53,7 +53,6 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
     return categories.find(cat => cat._id === activeCategory);
   }, [categories, activeCategory]);
 
-  if (loading) return <CategorySkeleton />;
   if (categories.length === 0) return null;
 
   return (
@@ -157,7 +156,7 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
   );
 };
 
-const FeaturedProducts = ({ products = [], loading = false }) => {
+const FeaturedProducts = ({ products = [] }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -211,7 +210,6 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
     };
   }, [checkScrollButtons, products.length]);
 
-  if (loading) return null;
   if (!products.length) return null;
 
   return (
@@ -624,20 +622,6 @@ export default function HomePage() {
     window.location.reload();
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white min-h-screen">
-        <Navbar />
-        <div className="pt-24">
-          <div className="h-96 bg-slate-200 animate-pulse"></div>
-          <div className="max-w-7xl mx-auto px-4 py-12">
-            <CategorySkeleton />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="bg-white min-h-screen flex flex-col items-center justify-center">
@@ -668,10 +652,9 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       
-      <CategoryComponent 
-        categories={homeData.categories} 
-        loading={false}
-      />
+      {loading ? <CategorySkeleton /> : (
+        <CategoryComponent categories={homeData.categories} />
+      )}
       
       <Services />
       
@@ -683,10 +666,7 @@ export default function HomePage() {
       
       <FAQ />
       
-      <FeaturedProducts 
-        products={homeData.featuredProducts} 
-        loading={false}
-      />
+      {!loading && <FeaturedProducts products={homeData.featuredProducts} />}
       
       <Footer />
     </div>

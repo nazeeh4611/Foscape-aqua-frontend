@@ -24,22 +24,6 @@ const CategorySkeleton = () => (
   </div>
 );
 
-const ProductSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {[...Array(6)].map((_, i) => (
-      <div key={i} className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
-        <div className="h-48 bg-slate-200"></div>
-        <div className="p-5 space-y-3">
-          <div className="h-6 bg-slate-200 rounded w-3/4"></div>
-          <div className="h-4 bg-slate-200 rounded w-full"></div>
-          <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-          <div className="h-10 bg-slate-200 rounded-xl mt-4"></div>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
 const CategoryComponent = ({ categories = [], loading = false }) => {
   const [activeCategory, setActiveCategory] = useState('');
   const navigate = useNavigate();
@@ -176,61 +160,8 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
 const FeaturedProducts = ({ products = [], loading = false }) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const scrollLeft = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    slider.scrollBy({ left: -344, behavior: 'smooth' });
-  }, []);
-
-  const scrollRight = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    slider.scrollBy({ left: 344, behavior: 'smooth' });
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    const slider = sliderRef.current;
-    if (!slider || !products.length) return;
-    const index = Math.round(slider.scrollLeft / 344);
-    setCurrentIndex(Math.min(index, products.length - 1));
-  }, [products.length]);
-
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    slider.addEventListener('scroll', handleScroll, { passive: true });
-    return () => slider.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  if (loading) {
-    return (
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="h-8 bg-slate-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
-            <div className="h-10 bg-slate-200 rounded w-64 mx-auto mb-4 animate-pulse"></div>
-            <div className="h-6 bg-slate-200 rounded w-96 mx-auto animate-pulse"></div>
-          </div>
-          <div className="flex gap-6 overflow-hidden">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden animate-pulse">
-                <div className="h-48 bg-slate-200"></div>
-                <div className="p-6">
-                  <div className="h-6 bg-slate-200 rounded mb-3"></div>
-                  <div className="h-4 bg-slate-200 rounded mb-4"></div>
-                  <div className="h-8 bg-slate-200 rounded"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!products.length) return null;
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   const gradients = [
     "from-blue-600 to-cyan-600",
@@ -242,6 +173,46 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
   ];
 
   const getGradientColor = (index) => gradients[index % gradients.length];
+
+  const checkScrollButtons = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    
+    setCanScrollLeft(slider.scrollLeft > 0);
+    setCanScrollRight(slider.scrollLeft < slider.scrollWidth - slider.clientWidth - 10);
+  }, []);
+
+  const scrollLeft = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    slider.scrollBy({ left: -350, behavior: 'smooth' });
+    setTimeout(checkScrollButtons, 300);
+  }, [checkScrollButtons]);
+
+  const scrollRight = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    slider.scrollBy({ left: 350, behavior: 'smooth' });
+    setTimeout(checkScrollButtons, 300);
+  }, [checkScrollButtons]);
+
+  useEffect(() => {
+    checkScrollButtons();
+    const slider = sliderRef.current;
+    if (!slider) return;
+    
+    const handleScroll = () => checkScrollButtons();
+    slider.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', checkScrollButtons);
+    
+    return () => {
+      slider.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', checkScrollButtons);
+    };
+  }, [checkScrollButtons, products.length]);
+
+  if (loading) return null;
+  if (!products.length) return null;
 
   return (
     <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
@@ -256,24 +227,33 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
         </div>
 
         <div className="relative">
-          <button 
-            onClick={scrollLeft} 
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
+          {canScrollLeft && (
+            <button 
+              onClick={scrollLeft} 
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
 
-          <button 
-            onClick={scrollRight} 
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          {canScrollRight && (
+            <button 
+              onClick={scrollRight} 
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 w-12 h-12 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-full shadow-xl flex items-center justify-center z-10 hover:scale-110 transition-all duration-300"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
 
           <div 
             ref={sliderRef} 
-            className="flex gap-6 overflow-x-auto pb-8 no-scrollbar snap-x snap-mandatory"
-            style={{ scrollBehavior: 'smooth' }}
+            className="flex gap-6 overflow-x-auto pb-8"
+            style={{ 
+              scrollBehavior: 'smooth',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
           >
             {products.map((product, index) => {
               const gradientColor = getGradientColor(index);
@@ -281,7 +261,7 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
                 <div 
                   key={product._id} 
                   onClick={() => navigate(`/product/${product._id}`)} 
-                  className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group snap-start"
+                  className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
                 >
                   <div className="relative h-48 overflow-hidden">
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradientColor} opacity-10`} />
@@ -343,36 +323,11 @@ const FeaturedProducts = ({ products = [], loading = false }) => {
               );
             })}
           </div>
-        </div>
 
-        <div className="flex justify-center items-center gap-6 mt-8">
-          <div className="flex gap-2">
-            {products.slice(0, Math.min(6, products.length)).map((_, index) => (
-              <button 
-                key={index} 
-                className={`w-3 h-3 rounded-full transition-all ${
-                  currentIndex === index 
-                    ? "bg-gradient-to-r from-blue-900 to-indigo-900 w-8" 
-                    : "bg-slate-300 hover:bg-slate-400"
-                }`} 
-              />
-            ))}
-          </div>
-          <div className="text-sm font-medium bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
-            {currentIndex + 1} / {products.length}
-          </div>
+          <div className="absolute left-0 top-0 bottom-8 w-8 bg-gradient-to-r from-slate-50 to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-8 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
         </div>
       </div>
-
-      <style jsx>{`
-        .no-scrollbar { 
-          -ms-overflow-style: none; 
-          scrollbar-width: none; 
-        }
-        .no-scrollbar::-webkit-scrollbar { 
-          display: none; 
-        }
-      `}</style>
     </div>
   );
 };
@@ -677,10 +632,6 @@ export default function HomePage() {
           <div className="h-96 bg-slate-200 animate-pulse"></div>
           <div className="max-w-7xl mx-auto px-4 py-12">
             <CategorySkeleton />
-            <div className="my-12">
-              <div className="h-10 bg-slate-200 rounded w-64 mx-auto mb-8 animate-pulse"></div>
-              <ProductSkeleton />
-            </div>
           </div>
         </div>
       </div>

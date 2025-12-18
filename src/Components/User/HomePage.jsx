@@ -97,68 +97,18 @@ const ProductSkeleton = () => (
   </div>
 );
 
+// Homepage.js - STREAMLINED CategoryComponent
 const CategoryComponent = ({ categories = [], loading = false }) => {
-  const [activeCategory, setActiveCategory] = useState('');
-  const [categoryDetails, setCategoryDetails] = useState({});
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (categories.length > 0 && !activeCategory) {
-      setActiveCategory(categories[0]._id);
-    }
-  }, [categories, activeCategory]);
-
-  useEffect(() => {
-    if (!activeCategory) return;
-
-    const loadCategoryDetails = async () => {
-      if (categoryDetails[activeCategory]?.description) return;
-
-      const cached = cache.get(`category_detail_${activeCategory}`);
-      if (cached) {
-        setCategoryDetails(prev => ({ ...prev, [activeCategory]: cached }));
-        return;
-      }
-
-      setLoadingDetails(true);
-      try {
-        const response = await axios.get(`${baseurl}user/category/${activeCategory}`, { timeout: 5000 });
-        if (response.data.success) {
-          const details = response.data.data;
-          setCategoryDetails(prev => ({ ...prev, [activeCategory]: details }));
-          cache.set(`category_detail_${activeCategory}`, details);
-        }
-      } catch (error) {
-        console.error('Error loading category details:', error);
-      } finally {
-        setLoadingDetails(false);
-      }
-    };
-
-    loadCategoryDetails();
-  }, [activeCategory, categoryDetails]);
-
-  const gradients = useMemo(() => [
+  const gradients = [
     'from-blue-500 to-cyan-500',
     'from-emerald-500 to-teal-500',
     'from-purple-500 to-pink-500',
     'from-orange-500 to-red-500',
     'from-indigo-500 to-blue-500',
     'from-pink-500 to-rose-500',
-  ], []);
-
-  const getGradientColor = (index) => gradients[index % gradients.length];
-
-  const handleViewProducts = (categoryId) => {
-    navigate(`/${categoryId}/sub-category`);
-  };
-
-  const activeData = useMemo(() => {
-    const category = categories.find(cat => cat._id === activeCategory);
-    const details = categoryDetails[activeCategory];
-    return category ? { ...category, ...details } : null;
-  }, [categories, activeCategory, categoryDetails]);
+  ];
 
   if (loading) return <CategorySkeleton />;
   if (categories.length === 0) return null;
@@ -171,108 +121,47 @@ const CategoryComponent = ({ categories = [], loading = false }) => {
             <Fish className="w-4 h-4 text-blue-600" />
             <span className="text-blue-600 font-medium">Our Categories</span>
           </div>
-
           <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-3">
             Our Categories
           </h2>
-
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Explore our premium selection of aquatic life and professional equipment
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
           {categories.map((category, index) => {
-            const gradientColor = getGradientColor(index);
-            const isActive = activeCategory === category._id;
+            const gradientColor = gradients[index % gradients.length];
             return (
-              <button
+              <div
                 key={category._id}
-                onClick={() => setActiveCategory(category._id)}
-                className={`group flex flex-col items-center gap-3 p-6 w-36 rounded-2xl transition-all 
-                ${isActive
-                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 shadow-xl border-2 border-blue-200"
-                  : "bg-slate-50 hover:bg-white shadow-md hover:shadow-lg"
-                }`}
+                onClick={() => navigate(`/${category._id}/sub-category`)}
+                className="group flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl cursor-pointer transition-all duration-300 hover:scale-105"
               >
-                <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  isActive 
-                    ? `bg-gradient-to-br ${gradientColor} shadow-lg` 
-                    : 'bg-white'
-                }`}>
+                <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center p-2`}>
                   {category.image ? (
-                    <img src={category.image} alt={category.name} className="w-10 h-10 object-contain" />
+                    <img src={category.image} alt={category.name} className="w-full h-full object-contain" />
                   ) : (
-                    <Fish className="w-10 h-10 text-blue-600" />
+                    <Fish className="w-10 h-10 text-white" />
                   )}
                 </div>
-
-                <span className="text-slate-900 font-semibold">{category.name}</span>
-
-                {isActive && (
-                  <div className={`w-12 h-1.5 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
-                )}
-              </button>
+                <span className="text-slate-900 font-semibold text-center">
+                  {category.name}
+                </span>
+              </div>
             );
           })}
         </div>
 
-        {activeData && (
-          <div className="w-full mx-auto bg-gradient-to-r from-[#144E8C] to-[#78CDD1] rounded-3xl p-6 md:p-12 shadow-2xl">
-
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
-
-              <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl p-1.5 shadow-2xl ${
-                getGradientColor(categories.findIndex(c => c._id === activeCategory))
-              }`}>
-                <div className="w-full h-full bg-white rounded-xl flex items-center justify-center">
-                  <img
-                    src={activeData.image}
-                    alt={activeData.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 text-white">
-
-                <h3 className="text-4xl font-bold mb-3">{activeData.name}</h3>
-
-                {loadingDetails ? (
-                  <div className="space-y-3 opacity-70 animate-pulse">
-                    <div className="h-4 bg-white/30 rounded"></div>
-                    <div className="h-4 bg-white/30 rounded w-4/5"></div>
-                    <div className="h-4 bg-white/30 rounded w-3/5"></div>
-                  </div>
-                ) : (
-                  <p className="text-lg mb-6">
-                    {activeData.description || "Explore our quality products in this category"}
-                  </p>
-                )}
-
-                <button
-                  onClick={() => handleViewProducts(activeData._id)}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-semibold shadow-lg hover:scale-105 transition"
-                >
-                  View Products
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="text-center mt-12">
+        <div className="text-center">
           <button
             onClick={() => navigate('/categories')}
-            className="inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
+            className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
           >
             Explore All Categories
             <ChevronDown className="w-5 h-5" />
           </button>
         </div>
-
       </div>
     </div>
   );

@@ -595,21 +595,63 @@ export default function HomePage() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
+        const cached = sessionStorage.getItem('foscapeHomeCache');
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < 10 * 60 * 1000) {
+            setHomeData(data);
+            setLoading(false);
+            setTimeout(() => fetchFreshData(), 100);
+            return;
+          }
+        }
+
         const response = await axios.get(`${baseurl}user/batch-data?include=categories,featured`, {
           timeout: 8000
         });
         
         if (response.data && response.data.success) {
-          setHomeData({
+          const data = {
             categories: response.data.categories || [],
             featuredProducts: response.data.featuredProducts || []
-          });
+          };
+          
+          setHomeData(data);
+          setLoading(false);
+          
+          sessionStorage.setItem('foscapeHomeCache', JSON.stringify({
+            data,
+            timestamp: Date.now()
+          }));
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
         setError(err.message);
-      } finally {
         setLoading(false);
+      }
+    };
+
+    const fetchFreshData = async () => {
+      try {
+        const response = await axios.get(`${baseurl}user/batch-data?include=categories,featured`, {
+          timeout: 8000
+        });
+        
+        if (response.data && response.data.success) {
+          const data = {
+            categories: response.data.categories || [],
+            featuredProducts: response.data.featuredProducts || []
+          };
+          
+          setHomeData(data);
+          
+          sessionStorage.setItem('foscapeHomeCache', JSON.stringify({
+            data,
+            timestamp: Date.now()
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching fresh home data:', err);
       }
     };
 

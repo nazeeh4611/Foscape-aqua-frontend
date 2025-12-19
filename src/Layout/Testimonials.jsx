@@ -1,54 +1,62 @@
 import React from 'react';
+import { Star } from 'lucide-react';
 
 const Testimonials = () => {
+  const testimonials = [
+    {
+      name: "John Smith",
+      role: "Aquarium Enthusiast",
+      content: "Excellent quality products and outstanding customer service. My fish are thriving!",
+      rating: 5
+    },
+    {
+      name: "Sarah Johnson",
+      role: "Pet Store Owner",
+      content: "Reliable supplier with consistent quality. Highly recommend for both personal and business needs.",
+      rating: 5
+    },
+    {
+      name: "Mike Chen",
+      role: "First-time Buyer",
+      content: "Great experience from start to finish. The team helped me set up my first aquarium perfectly.",
+      rating: 5
+    }
+  ];
+
   return (
-    <section className="py-20 bg-gradient-to-br from-blue-50 to-cyan-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">What Our Clients Say</h2>
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Star className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Testimonials</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            What Our Clients Say
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Read what our satisfied customers have to say about their experience
+          </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
-            <div className="text-center">
-              <div className="flex justify-center mb-6">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                  </svg>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          {testimonials.map((testimonial, index) => (
+            <div key={index} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 md:p-8 shadow-lg">
+              <div className="flex gap-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                 ))}
               </div>
-              
-              <blockquote className="text-xl lg:text-2xl text-gray-700 leading-relaxed mb-8">
-                "Foscape transformed our aquarium! Exceptional service and expertise in aquatic care. Highly recommend their services!"
-              </blockquote>
-              
-              <div className="flex items-center justify-center">
-                <div className="text-center">
-                  <p className="font-bold text-gray-900 text-lg">Rishan Shanu</p>
-                  <p className="text-gray-600">Satisfied Customer</p>
-                </div>
+              <p className="text-slate-700 italic mb-6">"{testimonial.content}"</p>
+              <div>
+                <p className="font-bold text-slate-900">{testimonial.name}</p>
+                <p className="text-slate-600">{testimonial.role}</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-16 grid md:grid-cols-3 gap-8 text-center">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">100%</div>
-            <p className="text-gray-600 font-medium">Client Satisfaction</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">24/7</div>
-            <p className="text-gray-600 font-medium">Support Available</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">Premium</div>
-            <p className="text-gray-600 font-medium">Quality Materials</p>
-          </div>
+          ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

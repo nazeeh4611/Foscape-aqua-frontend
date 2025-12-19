@@ -1,97 +1,73 @@
 import React from 'react';
-import { ArrowRight, CheckCircle } from 'lucide-react';
-import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { Package, Truck, Shield, Clock, CheckCircle } from 'lucide-react';
 
 const Services = () => {
+  const navigate = useNavigate();
   const services = [
     {
-      title: "Residential Aquarium Solutions",
-      description: "Custom aquariums designed for homes, enhancing beauty and tranquility in your space.",
-      image: "/residential.png",
-      gradient: "from-[#144E8C] to-[#78CDD1]"
+      icon: <Package className="w-8 h-8" />,
+      title: "Premium Quality",
+      description: "Hand-selected aquatic life and equipment from trusted sources",
+      gradient: "from-blue-500 to-cyan-500"
     },
     {
-      title: "Commercial Aquarium Services",
-      description: "Professional aquarium installations and maintenance for businesses, creating stunning aquatic environments.",
-      image: "/pond.png",
-      gradient: "from-[#78C7A2] to-[#99D5C8]"
+      icon: <Truck className="w-8 h-8" />,
+      title: "Fast Delivery",
+      description: "Safe and secure shipping with temperature-controlled packaging",
+      gradient: "from-emerald-500 to-teal-500"
     },
     {
-      title: "Water Garden Design",
-      description: "Beautifully designed water gardens that bring nature's serenity to your residential or commercial property.",
-      image: "/garden.png",
-      gradient: "from-[#78CDD1] to-[#CFEAE3]"
+      icon: <Shield className="w-8 h-8" />,
+      title: "Health Guarantee",
+      description: "All products come with our comprehensive health guarantee",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: <Clock className="w-8 h-8" />,
+      title: "24/7 Support",
+      description: "Expert assistance available around the clock for all your needs",
+      gradient: "from-orange-500 to-red-500"
     }
   ];
 
   return (
-    <section id="services" className="py-20 bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8]">
-      <div className="max-w-7xl mx-auto px-4">
-
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-slate-800 mb-4">Our Services</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">
-            Expert solutions for all your aquatic needs, from residential aquariums to commercial installations.
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <CheckCircle className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Services</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Comprehensive Solutions
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            For all your aquatic needs
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl border-2 border-slate-100 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+              onClick={() => navigate('/service')}
+              className="group bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
             >
-              <div className={`h-48 bg-gradient-to-br ${service.gradient} relative`}>
-                <img
-                  src={service.image}
-                  alt={service.title}
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[90%] h-40 object-cover rounded-xl shadow-md"
-                />
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                {service.icon}
               </div>
-
-              <div className="p-6 pt-20">
-                <h3 className="text-xl font-bold text-slate-800 mb-2">{service.title}</h3>
-                <p className="text-slate-600 leading-relaxed mb-4">{service.description}</p>
-
-                <Link to="/contact">
-            <button className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 group-hover:bg-gradient-to-r group-hover:from-[#144E8C] group-hover:to-[#78CDD1] text-slate-700 group-hover:text-white rounded-xl font-medium transition-all duration-300">
-              <span>Learn More</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </Link>
-              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {service.title}
+              </h3>
+              <p className="text-slate-600">
+                {service.description}
+              </p>
             </div>
           ))}
         </div>
-
-        <div className="mt-20 grid md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h3 className="text-2xl font-bold text-slate-800 mb-4">Fountain Design</h3>
-            <p className="text-slate-600 mb-6">
-              Custom fountain installations that create stunning focal points for any space.
-            </p>
-            <Link to="/gallery">
-
-            <button className="px-6 py-3 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all">
-              View Gallery
-            </button>
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h3 className="text-2xl font-bold text-slate-800 mb-4">Pool Management</h3>
-            <p className="text-slate-600 mb-6">
-              Complete pool maintenance and management services for residential and commercial properties.
-            </p>
-            <Link to="/contact">
-            <button className="px-6 py-3 bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white rounded-xl font-semibold hover:shadow-lg transition-all">
-              Get Quote
-            </button>
-            </Link>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
   );
 };
 

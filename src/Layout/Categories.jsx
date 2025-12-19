@@ -1,156 +1,188 @@
-import React, { useEffect, useState } from 'react';
-import { Fish, Package } from 'lucide-react';
-import axios from 'axios';
-import { baseurl } from '../Base/Base';
-import {  Link } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Fish, ChevronRight, ChevronDown } from 'lucide-react';
+import { fetchCategories } from '../services/homeService';
+import useApiData from '../hooks/useApiData';
+import { CategorySkeleton } from '../Components/Common/LoadingSkeleton';
 
 const CategoryComponent = () => {
   const [activeCategory, setActiveCategory] = useState('');
-  const [categories, setCategories] = useState([]);
+  const navigate = useNavigate();
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${baseurl}user/category`);
-      console.log(response.data);
-      if (response.data.success) {
-        setCategories(response.data.categories);
-        if (response.data.categories.length > 0) {
-          setActiveCategory(response.data.categories[0]._id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
+  const {
+    data,
+    loading,
+    error,
+    fromCache
+  } = useApiData(fetchCategories);
+  
+  const categories = Array.isArray(data) ? data : [];
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0]._id);
+    }
+  }, [categories, activeCategory]);
 
-  const getGradientColor = (index) => {
-    const gradients = [
-      'from-blue-500 to-cyan-500',
-      'from-emerald-500 to-teal-500',
-      'from-purple-500 to-pink-500',
-      'from-orange-500 to-red-500',
-      'from-indigo-500 to-blue-500',
-      'from-pink-500 to-rose-500',
-      'from-teal-500 to-cyan-500',
-      'from-amber-500 to-orange-500'
-    ];
-    return gradients[index % gradients.length];
+  const gradients = useMemo(() => [
+    'from-blue-500 to-cyan-500',
+    'from-emerald-500 to-teal-500',
+    'from-purple-500 to-pink-500',
+    'from-orange-500 to-red-500',
+    'from-indigo-500 to-blue-500',
+    'from-pink-500 to-rose-500',
+  ], []);
+
+  const getGradientColor = (index) => gradients[index % gradients.length];
+
+  const handleViewProducts = (categoryId) => {
+    navigate(`/${categoryId}/sub-category`);
   };
+  const activeData = useMemo(() => {
+    if (!Array.isArray(categories)) return null;
+    return categories.find(cat => cat._id === activeCategory);
+  }, [categories, activeCategory]);
+  
 
-  const activeData = categories.find(cat => cat._id === activeCategory);
+  // Show loading state
+  if (loading && categories.length === 0) {
+    return <CategorySkeleton />;
+  }
+
+  // Show error state
+  if (error && categories.length === 0) {
+    return (
+      <div className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-8">
+            <h3 className="text-xl font-semibold text-red-700 mb-3">Failed to load categories</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (categories.length === 0) return null;
 
   return (
-    <div className="w-full mx-auto px-4 py-8 bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+    <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
+            <Fish className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-600 font-medium">Our Categories</span>
+            {fromCache && (
+              <span className="text-xs text-blue-400">(Cached)</span>
+            )}
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-3">
             Our Categories
-          </h1>
-          <p className="text-sm text-slate-600 max-w-xl mx-auto">
-            Discover our premium selection of aquatic life and professional equipment
+          </h2>
+
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Explore our premium selection of aquatic life and professional equipment
           </p>
         </div>
 
-        {/* Compact Category Icons */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map((category, index) => {
             const gradientColor = getGradientColor(index);
             const isActive = activeCategory === category._id;
-            
             return (
               <button
                 key={category._id}
                 onClick={() => setActiveCategory(category._id)}
-                className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-300 hover:scale-105 w-28 ${
-                  isActive 
-                    ? 'bg-white shadow-lg' 
-                    : 'bg-white/60 hover:bg-white shadow hover:shadow-md'
+                className={`group flex flex-col items-center gap-3 p-6 w-36 rounded-2xl transition-all 
+                ${isActive
+                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 shadow-xl border-2 border-blue-200"
+                  : "bg-slate-50 hover:bg-white shadow-md hover:shadow-lg"
                 }`}
               >
-                {/* Icon/Image Container */}
-                <div className={`relative w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   isActive 
-                    ? `bg-gradient-to-br ${gradientColor} shadow-md` 
-                    : 'bg-slate-100 group-hover:bg-slate-200'
+                    ? `bg-gradient-to-br ${gradientColor} shadow-lg` 
+                    : 'bg-white'
                 }`}>
-                  <img 
-                    src={category.image} 
-                    alt={category.name}
-                    className={`w-12 h-12 object-cover rounded-lg transition-all duration-300 ${
-                      isActive ? 'brightness-110' : 'brightness-90 group-hover:brightness-100'
-                    }`}
-                  />
+                  {category.image ? (
+                    <img 
+                      src={category.image} 
+                      alt={category.name} 
+                      className="w-10 h-10 object-contain"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/placeholder.jpg';
+                      }}
+                    />
+                  ) : (
+                    <Fish className="w-10 h-10 text-blue-600" />
+                  )}
                 </div>
-                
-                {/* Category Name */}
-                <span className={`text-xs font-semibold text-center transition-colors duration-300 ${
-                  isActive ? 'text-slate-800' : 'text-slate-600 group-hover:text-slate-800'
-                }`}>
-                  {category.name}
-                </span>
 
-                {/* Active Indicator */}
+                <span className="text-slate-900 font-semibold">{category.name}</span>
+
                 {isActive && (
-                  <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
+                  <div className={`w-12 h-1.5 rounded-full bg-gradient-to-r ${gradientColor}`}></div>
                 )}
               </button>
             );
           })}
         </div>
 
-        {/* Selected Category Display */}
         {activeData && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              {/* Image Section */}
-              <div className="flex-shrink-0">
-                <div className={`w-48 h-48 rounded-2xl bg-gradient-to-br ${getGradientColor(categories.findIndex(c => c._id === activeCategory))} p-1 shadow-xl`}>
-                  <div className="w-full h-full bg-white rounded-xl overflow-hidden">
-                    <img 
-                      src={activeData.image} 
-                      alt={activeData.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+          <div className="w-full mx-auto bg-gradient-to-r from-[#144E8C] to-[#78CDD1] rounded-3xl p-6 md:p-12 shadow-2xl">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
+              <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl p-1.5 shadow-2xl ${
+                getGradientColor(categories.findIndex(c => c._id === activeCategory))
+              }`}>
+                <div className="w-full h-full bg-white rounded-xl flex items-center justify-center">
+                  <img
+                    src={activeData.image}
+                    alt={activeData.name}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/placeholder.jpg';
+                    }}
+                  />
                 </div>
               </div>
-              
-              {/* Info Section */}
-              <div className="flex-grow text-center md:text-left">
-                <h2 className="text-3xl font-bold text-slate-800 mb-3">
-                  {activeData.name}
-                </h2>
-                <p className="text-slate-600 mb-6 leading-relaxed">
-                  {activeData.description}
+
+              <div className="flex-1 text-white">
+                <h3 className="text-4xl font-bold mb-3">{activeData.name}</h3>
+                <p className="text-lg mb-6">
+                  {activeData.description || "Explore our quality products in this category"}
                 </p>
-                <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                  <Package className="w-4 h-4" />
-                  View All
+
+                <button
+                  onClick={() => handleViewProducts(activeData._id)}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-semibold shadow-lg hover:scale-105 transition"
+                >
+                  View Products
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
         )}
-        
-        {/* Bottom CTA */}
-        <div className="text-center">
-        <Link to="/categories">
-  <button
-    className="inline-flex items-center gap-2 px-8 py-3 
-               bg-gradient-to-r from-slate-700 to-slate-900 
-               text-white rounded-xl font-semibold 
-               hover:shadow-lg transition-all duration-300"
-  >
-    <Fish className="w-5 h-5" />
-    Explore All Products
-  </button>
-</Link>
 
+        <div className="text-center mt-12">
+          <button
+            onClick={() => navigate('/categories')}
+            className="inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 transition"
+          >
+            Explore All Categories
+            <ChevronDown className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>

@@ -466,6 +466,8 @@ export default function AquariumProductsPage() {
 
   const confirmDelete = async () => {
     try {
+      console.log("first",token)
+
       await axios.delete(`${baseurl}admin/delete-product/${deleteConfirm.productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

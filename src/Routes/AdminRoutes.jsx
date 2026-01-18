@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Sidebar from "../Components/Admin/Sidebar";
 import AdminCategoryPage from "../Components/Admin/Category";
 import AdminSubCategoryPage from "../Components/Admin/SubCategory";
@@ -24,7 +24,7 @@ const AdminLayout = () => {
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       <Sidebar isOpen={isOpen} toggleSidebar={toggleSidebar} />
 
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-hidden">
         <div className="lg:hidden p-4 bg-white shadow-sm">
           <button
             onClick={toggleSidebar}
@@ -34,24 +34,32 @@ const AdminLayout = () => {
           </button>
         </div>
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
           <Outlet />
         </div>
       </main>
     </div>
   );
 };
+
 export default function AdminRoute() {
+  const navigate = useNavigate();
+  
+  const checkAuth = () => {
+    const token = localStorage.getItem("Atoken");
+    return !!token;
+  };
+
   return (
     <Routes>
-<Route
-  path="/login"
-  element={
-    localStorage.getItem("Atoken") 
-      ? <Navigate to="/admin/dashboard" replace />
-      : <AdminLogin />
-  }
-/>
+      <Route
+        path="/login"
+        element={
+          checkAuth() 
+            ? <Navigate to="/admin/dashboard" replace />
+            : <AdminLogin />
+        }
+      />
 
       <Route
         path="/"
@@ -61,7 +69,8 @@ export default function AdminRoute() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="categories/main" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="categories/main" element={<AdminCategoryPage />} />
         <Route path="categories/sub" element={<AdminSubCategoryPage />} />
         <Route path="products" element={<AquariumProductsPage />} />
@@ -69,11 +78,9 @@ export default function AdminRoute() {
         <Route path="orders" element={<AdminOrderPage />} />
         <Route path="gallery" element={<AdminGalleryPage />} />
         <Route path="sales" element={<SalesReport />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="works" element={<PortfolioAdmin />} />
       </Route>
     </Routes>
   );
 }
-

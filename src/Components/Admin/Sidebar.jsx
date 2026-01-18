@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       const name = cookie.split("=")[0].trim();
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
     });
-    navigate("/admin/login");
+    window.location.href = "/admin/login";
   };
 
   return (
@@ -63,7 +63,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           <h1 className="text-2xl font-bold tracking-wide">FOSCAPE ADMIN</h1>
         </div>
 
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <ul className="space-y-2">
             <li>
               <Link
@@ -203,20 +203,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <span className="ml-3 font-medium">Sales</span>
               </Link>
             </li>
+            
             <li>
-  <Link
-    to="/admin/works"
-    onClick={handleLinkClick}
-    className={`flex items-center p-3 rounded-xl transition ${
-      isActive("/admin/works")
-        ? "bg-white text-[#144E8C] shadow-md"
-        : "text-white/90 hover:bg-white/20"
-    }`}
-  >
-    <Layers className="w-5 h-5" />
-    <span className="ml-3 font-medium">Works</span>
-  </Link>
-</li>
+              <Link
+                to="/admin/works"
+                onClick={handleLinkClick}
+                className={`flex items-center p-3 rounded-xl transition ${
+                  isActive("/admin/works")
+                    ? "bg-white text-[#144E8C] shadow-md"
+                    : "text-white/90 hover:bg-white/20"
+                }`}
+              >
+                <Layers className="w-5 h-5" />
+                <span className="ml-3 font-medium">Works</span>
+              </Link>
+            </li>
 
             <li>
               <Link

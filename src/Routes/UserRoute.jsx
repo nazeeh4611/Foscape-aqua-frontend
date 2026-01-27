@@ -19,90 +19,39 @@ import { UserPrivateRoute } from "./Private";
 import { PrivacyPolicy, RefundPolicy, ShippingPolicy, TermsConditions } from "../Components/Policy/Privacy";
 import FloatingIcons from "../Layout/Icons";
 import PortfolioPage from "../Components/User/Works";
-
+import UserLayout from "./UserLayout";
 
 function UserRoute() {
   return (
     <>
-    <FloatingIcons />
-
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/categories" element={<CategoriesPage />} />
-      <Route path="/:categoryId/sub-category" element={<SubCategoriesPage />} />
-      <Route path="/products/subcategory/:subCategoryId" element={<ProductsPage />} />
-      <Route path="/product/:id" element={<ProductDetailsPage />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-conditions" element={<TermsConditions />} />
-        <Route path="/refund-policy" element={<RefundPolicy />} />
-        <Route path="/shipping-policy" element={<ShippingPolicy />} />
-
-      <Route
-        path="/cart"
-        element={
-          <UserPrivateRoute>
-            <CartPage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-        path="/wishlist"
-        element={
-          <UserPrivateRoute>
-            <WishlistPage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-        path="/checkout"
-        element={
-          <UserPrivateRoute>
-            <CheckoutPage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-        path="/orders"
-        element={
-          <UserPrivateRoute>
-            <OrdersPage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-        path="/order-details/:orderId"
-        element={
-          <UserPrivateRoute>
-            <OrderDetailsPage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <UserPrivateRoute>
-            <ProfilePage />
-          </UserPrivateRoute>
-        }
-      />
-      <Route
-      path="/order-success/:orderId"
-       element={
-        <UserPrivateRoute>
-       <OrderSuccessPage />
-       </UserPrivateRoute>
-       } />
-
-
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/service" element={<ServicesPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/gallery" element={<Gallery />} />
-      <Route path="/works" element={<PortfolioPage />} />
-    </Routes>
+      <FloatingIcons />
+      <UserLayout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/:categoryId/sub-category" element={<SubCategoriesPage />} />
+          <Route path="/products/subcategory/:subCategoryId" element={<ProductsPage />} />
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
+          <Route path="/cart" element={<UserPrivateRoute><CartPage /></UserPrivateRoute>} />
+          <Route path="/wishlist" element={<UserPrivateRoute><WishlistPage /></UserPrivateRoute>} />
+          <Route path="/checkout" element={<UserPrivateRoute><CheckoutPage /></UserPrivateRoute>} />
+          <Route path="/orders" element={<UserPrivateRoute><OrdersPage /></UserPrivateRoute>} />
+          <Route path="/order-details/:orderId" element={<UserPrivateRoute><OrderDetailsPage /></UserPrivateRoute>} />
+          <Route path="/profile" element={<UserPrivateRoute><ProfilePage /></UserPrivateRoute>} />
+          <Route path="/order-success/:orderId" element={<UserPrivateRoute><OrderSuccessPage /></UserPrivateRoute>} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/service" element={<ServicesPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/works" element={<PortfolioPage />} />
+        </Routes>
+      </UserLayout>
     </>
   );
 }
 
 export default UserRoute;
-

@@ -158,7 +158,6 @@ const ContactPage = () => {
 
   return (
     <>
-      <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
       <div className=" bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">

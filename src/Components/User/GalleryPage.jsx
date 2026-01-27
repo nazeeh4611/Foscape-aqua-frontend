@@ -154,7 +154,6 @@ const Gallery = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] pt-24">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-[#144E8C] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -168,7 +167,6 @@ const Gallery = () => {
 
   return (
     <>
-      <Navbar />
 
       <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
         <div className="bg-gradient-to-r from-[#144E8C] to-[#78CDD1] text-white py-14 md:py-20">

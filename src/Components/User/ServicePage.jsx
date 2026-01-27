@@ -115,7 +115,6 @@ import { useNavigate } from 'react-router-dom';
 
     return (
       <>
-        <Navbar />
 
         <div className="bg-gradient-to-br from-[#CFEAE3] to-[#99D5C8] min-h-screen pt-24">
      

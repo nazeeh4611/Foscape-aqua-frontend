@@ -13,7 +13,6 @@ import FeaturedProducts from '../../Layout/FeaturedProducts';
 export default function HomePage() {
   return (
     <div className="bg-white">
-      <Navbar />
       <Hero />
       
       <CategoryComponent />

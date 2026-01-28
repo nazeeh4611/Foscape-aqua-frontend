@@ -7,6 +7,7 @@ import { CategorySkeleton } from '../Components/Common/LoadingSkeleton';
 
 const CategoryComponent = () => {
   const [activeCategory, setActiveCategory] = useState('');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const navigate = useNavigate();
 
   const {
@@ -22,7 +23,11 @@ const CategoryComponent = () => {
     if (categories.length > 0 && !activeCategory) {
       setActiveCategory(categories[0]._id);
     }
-  }, [categories, activeCategory]);
+    
+    if (loading === false) {
+      setIsInitialLoad(false);
+    }
+  }, [categories, activeCategory, loading]);
 
   const gradients = useMemo(() => [
     'from-blue-500 to-cyan-500',
@@ -38,18 +43,16 @@ const CategoryComponent = () => {
   const handleViewProducts = (categoryId) => {
     navigate(`/${categoryId}/sub-category`);
   };
+  
   const activeData = useMemo(() => {
     if (!Array.isArray(categories)) return null;
     return categories.find(cat => cat._id === activeCategory);
   }, [categories, activeCategory]);
-  
 
-  // Show loading state
-  if (loading && categories.length === 0) {
+  if (isInitialLoad && loading) {
     return <CategorySkeleton />;
   }
 
-  // Show error state
   if (error && categories.length === 0) {
     return (
       <div className="py-16 bg-white">
@@ -69,7 +72,9 @@ const CategoryComponent = () => {
     );
   }
 
-  if (categories.length === 0) return null;
+  if (categories.length === 0 && !loading) {
+    return null;
+  }
 
   return (
     <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
